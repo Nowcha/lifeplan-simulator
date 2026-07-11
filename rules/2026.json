@@ -24,7 +24,7 @@
       "_source": {
         "url": "https://www.nta.go.jp/publication/pamph/gensen/2026kaisei.pdf",
         "confirmedOn": "2026-07-11",
-        "note": "源泉所得税の改正のあらまし(令和8年4月・国税庁)。令和8・9年分: 給与所得控除最低保障74万円、収入69.1万〜220万円の特別区分表、220万円超は従来通り(別表第五の1/4端数処理)"
+        "note": "源泉所得税の改正のあらまし(令和8年4月・国税庁)。令和8・9年分: 給与所得控除最低保障74万円(収入740,999円まで給与所得ゼロ)、収入741,000〜219万9,999円の特別区分表、220万円以上は従来通り(別表第五の1/4端数処理)"
       },
       "pieces": [
         { "upTo": 740999, "type": "zero" },
@@ -174,5 +174,14 @@
       { "grade": 49, "standard": 1330000, "from": 1295000, "to": 1355000 },
       { "grade": 50, "standard": 1390000, "from": 1355000, "to": null }
     ]
+  },
+  "furusatoNozei": {
+    "specialDeductionCapRate": 0.2,
+    "selfPayAmount": 2000,
+    "_source": {
+      "url": "https://www.soumu.go.jp/main_sosiki/jichi_zeisei/czaisei/czaisei_seido/furusato/mechanism/deduction.html",
+      "confirmedOn": "2026-07-11",
+      "note": "総務省ふるさと納税ポータルサイト「税金の控除について」。住民税特例分は住民税所得割額の2割が上限、自己負担額は2,000円(寄附金控除の対象外)"
+    }
   }
 }

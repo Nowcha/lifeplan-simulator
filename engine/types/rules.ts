@@ -146,11 +146,21 @@ export interface NisaRules {
   _source: RuleSource;
 }
 
+/** ふるさと納税 特例控除の上限率と自己負担額 (地方税法第37条の2等) */
+export interface FurusatoNozeiRules {
+  /** 特例控除額の上限 = 住民税所得割額 × この率 (地方税法第37条の2、通常0.2) */
+  specialDeductionCapRate: Rate;
+  /** 控除対象外の自己負担額 (通常2,000円) */
+  selfPayAmount: Yen;
+  _source: RuleSource;
+}
+
 export interface RuleSet {
   year: number;
   incomeTax: IncomeTaxRules;
   residentTax: ResidentTaxRules;
   socialInsurance: SocialInsuranceRules;
+  furusatoNozei: FurusatoNozeiRules;
   childbirth?: ChildbirthRules;
   childBenefits?: ChildBenefitsRules;
   housingLoanTaxCredit?: HousingLoanTaxCreditRules;
