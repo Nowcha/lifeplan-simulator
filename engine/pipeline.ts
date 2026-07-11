@@ -234,7 +234,8 @@ export function runDeterministic(
       };
       furusato[person.id] = furusatoNozeiLimit({
         residentIncomeLevy: e.residentIncomeLevy,
-        incomeTaxMarginalRate: e.incomeTaxMarginalRate
+        incomeTaxMarginalRate: e.incomeTaxMarginalRate,
+        rules
       });
     }
 

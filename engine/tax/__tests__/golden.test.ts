@@ -22,7 +22,7 @@ import { computeIncomeTax } from "../incomeTax.js";
 import { computeResidentTax } from "../residentTax.js";
 import { employmentInsurance, monthlyPremiums } from "../socialInsurance.js";
 
-const rules = rules2026 as unknown as RuleSet;
+const rules = rules2026 as RuleSet;
 const TOLERANCE = 1000;
 
 function expectWithin(actual: Yen, expected: Yen): void {

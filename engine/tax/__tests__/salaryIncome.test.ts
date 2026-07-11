@@ -9,7 +9,7 @@ import rules2026 from "../../../rules/2026.json";
 import type { RuleSet } from "../../types/index.js";
 import { salaryIncome } from "../salaryIncome.js";
 
-const incomeTaxRules = (rules2026 as unknown as RuleSet).incomeTax;
+const incomeTaxRules = (rules2026 as RuleSet).incomeTax;
 
 describe("給与所得の計算(令和8・9年分の区分表)", () => {
   test.each([

@@ -11,7 +11,7 @@
  */
 
 import type { ResidentTaxRules, Yen } from "../types/index.js";
-import { applyRate, floorTo } from "./rounding.js";
+import { applyRate, floorTo, stepAmount } from "./rounding.js";
 import { spouseDeductionAmount } from "./incomeTax.js";
 
 export interface ResidentTaxInput {
@@ -31,20 +31,13 @@ export interface ResidentTaxResult {
   total: Yen;
 }
 
-const ZERO: ResidentTaxResult = {
+const ZERO: Readonly<ResidentTaxResult> = Object.freeze({
   taxableIncome: 0,
   incomeLevy: 0,
   adjustmentCredit: 0,
   perCapita: 0,
   total: 0
-};
-
-function stepAmount(steps: { incomeUpTo: Yen | null; amount: Yen }[], income: Yen): Yen {
-  for (const step of steps) {
-    if (step.incomeUpTo === null || income <= step.incomeUpTo) return step.amount;
-  }
-  return 0;
-}
+});
 
 export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
   const { totalIncome, socialInsurancePaid, rules } = input;

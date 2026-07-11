@@ -26,3 +26,15 @@ export function roundEmployeeShare(value: number): Yen {
 export function floorTo(value: number, unit: number): Yen {
   return Math.floor(value / unit) * unit;
 }
+
+/**
+ * Look up the amount for an income-indexed step ladder (e.g. 基礎控除,
+ * 配偶者控除 tables): returns the amount for the first step whose
+ * `incomeUpTo` is null (no upper bound) or >= income.
+ */
+export function stepAmount(steps: { incomeUpTo: Yen | null; amount: Yen }[], income: Yen): Yen {
+  for (const step of steps) {
+    if (step.incomeUpTo === null || income <= step.incomeUpTo) return step.amount;
+  }
+  return 0;
+}

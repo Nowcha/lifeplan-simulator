@@ -5,7 +5,7 @@
  */
 
 import type { IncomeTaxRules, Rate, Yen } from "../types/index.js";
-import { applyRate, floorTo } from "./rounding.js";
+import { applyRate, floorTo, stepAmount } from "./rounding.js";
 
 export interface IncomeTaxInput {
   /** 合計所得金額 (Phase 1: salary income only) */
@@ -33,13 +33,6 @@ export interface IncomeTaxResult {
     spouse: Yen;
     total: Yen;
   };
-}
-
-function stepAmount(steps: { incomeUpTo: Yen | null; amount: Yen }[], income: Yen): Yen {
-  for (const step of steps) {
-    if (step.incomeUpTo === null || income <= step.incomeUpTo) return step.amount;
-  }
-  return 0;
 }
 
 export function spouseDeductionAmount(

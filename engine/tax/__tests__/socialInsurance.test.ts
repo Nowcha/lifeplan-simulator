@@ -15,7 +15,7 @@ import {
   pensionStandardMonthly
 } from "../socialInsurance.js";
 
-const si = (rules2026 as unknown as RuleSet).socialInsurance;
+const si = (rules2026 as RuleSet).socialInsurance;
 
 describe("標準報酬月額の等級マッピング(境界値)", () => {
   test.each([

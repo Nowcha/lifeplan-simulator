@@ -5,9 +5,9 @@ import assumptions from "../../profile.sample/assumptions.json";
 import type { Assumptions, Household, RuleSet } from "../types/index.js";
 import { runDeterministic } from "../pipeline.js";
 
-const rules = rules2026 as unknown as RuleSet;
-const sampleHousehold = household as unknown as Household;
-const sampleAssumptions = assumptions as unknown as Assumptions;
+const rules = rules2026 as RuleSet;
+const sampleHousehold = household as Household;
+const sampleAssumptions = assumptions as Assumptions;
 
 describe("決定論パイプライン (サンプル世帯)", () => {
   const result = runDeterministic(sampleHousehold, [], sampleAssumptions, rules);
