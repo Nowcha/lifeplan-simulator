@@ -27,7 +27,9 @@
       "deductions": {}
     }
   ],
-  "children": [],
+  "children": [
+    { "id": "child-1", "birthYearMonth": "2024-04", "educationPlanRef": "edu-child-1" }
+  ],
   "municipality": "koto-ku",
   "baseExpenses": [
     { "label": "住居費(賃貸)", "monthly": 150000, "indexation": "fixed" },

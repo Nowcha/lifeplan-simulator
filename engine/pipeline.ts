@@ -1,11 +1,12 @@
 /**
- * Annual pipeline (design doc §8, Phase 1 scope = steps 1-6):
+ * Annual pipeline (design doc §8, Phase 1-2 scope = steps 1-6):
  *  1. income (curve interpolation x wage indexation)
  *  2. social insurance (standard monthly grade, bonus, employment insurance)
- *  3. benefits — STUB until Phase 2 (returns [])
+ *  3. benefits — STUB until the benefits task lands (returns [])
  *  4. income tax (salary income deduction → deductions → brackets → surtax)
  *  5. resident tax — levied on the PREVIOUS year's income
- *  6. expenses (base items x indexation)
+ *  6. expenses (base items x indexation + recurring/one-time event modifiers
+ *     + education cost table expansion)
  *  7-9. loans / savings / investment returns — STUB until Phase 3-4;
  *       cash balance is a simple accumulation.
  *
@@ -16,23 +17,29 @@
 import type {
   AnnualRow,
   Assumptions,
+  ChildbirthEvent,
+  EducationPlan,
   Household,
   LifeEvent,
+  OneTimeEvent,
   Person,
   PersonIncomeRow,
   Rate,
+  RecurringModifierEvent,
   RuleSet,
   SimulationResult,
   Yen
 } from "./types/index.js";
 import { bonusAnnualAt, indexFactor, indexationAt, monthlyBaseAt } from "./income/curve.js";
-import { annualBaseExpenses } from "./expenses/base.js";
+import { annualBaseExpenses, type ExpenseLine } from "./expenses/base.js";
+import { annualOneTimeEvents, annualRecurringEvents } from "./expenses/events.js";
+import { annualEducationExpenses, type ChildEducationInput } from "./expenses/education.js";
 import { salaryIncome } from "./tax/salaryIncome.js";
 import { computeIncomeTax } from "./tax/incomeTax.js";
 import { computeResidentTax } from "./tax/residentTax.js";
 import { furusatoNozeiLimit } from "./tax/furusato.js";
 import { bonusPremiums, employmentInsurance, monthlyPremiums } from "./tax/socialInsurance.js";
-import { parseYearMonth } from "./util/yearmonth.js";
+import { ageInYear, parseYearMonth } from "./util/yearmonth.js";
 
 export interface PipelineOptions {
   /** First simulated year assumes previous-year income = first-year income (kit §2-3) */
@@ -51,16 +58,77 @@ interface PersonYearEconomics {
   residentIncomeLevy: Yen;
 }
 
-function deterministicRates(assumptions: Assumptions): { inflation: Rate; wage: Rate } {
+interface DeterministicRates {
+  inflation: Rate;
+  wage: Rate;
+  /**
+   * Education-cost inflation (design doc: distinct from general CPI).
+   * Phase 2 supplies a deterministic fixed value via the same
+   * deterministicOverride mechanism as inflation/wage-growth, falling back
+   * to the general inflation rate when no override is supplied.
+   */
+  education: Rate;
+}
+
+function deterministicRates(assumptions: Assumptions): DeterministicRates {
+  const inflation = assumptions.deterministicOverride?.["inflation"] ?? assumptions.inflation.mean;
   return {
-    inflation: assumptions.deterministicOverride?.["inflation"] ?? assumptions.inflation.mean,
-    wage: assumptions.deterministicOverride?.["wage-growth"] ?? assumptions.wageGrowth.mean
+    inflation,
+    wage: assumptions.deterministicOverride?.["wage-growth"] ?? assumptions.wageGrowth.mean,
+    education: assumptions.deterministicOverride?.["education"] ?? inflation
   };
 }
 
-/** Age reached during the calendar year (= age on Dec 31; documented approximation) */
-function ageInYear(person: Person, year: number): number {
-  return year - parseYearMonth(person.birthYearMonth).year;
+/**
+ * Combine already-born household.children with children born via a future
+ * ChildbirthEvent, each paired with its "education" event if one exists.
+ * Ages before the child's birth year are handled by annualEducationExpenses
+ * (year < birthYear → no cost), so no filtering is needed here.
+ */
+function collectChildrenForEducation(household: Household, events: LifeEvent[]): ChildEducationInput[] {
+  const educationEvents = events.filter((e): e is EducationPlan => e.type === "education");
+
+  const fromHousehold: ChildEducationInput[] = household.children.map((child) => ({
+    childId: child.id,
+    birthYearMonth: child.birthYearMonth,
+    plan: educationEvents.find((e) => e.id === child.educationPlanRef)
+  }));
+
+  const fromEvents: ChildEducationInput[] = events
+    .filter((e): e is ChildbirthEvent => e.type === "childbirth")
+    .map((e) => ({
+      childId: e.childId,
+      birthYearMonth: e.expectedYearMonth,
+      plan: educationEvents.find((p) => p.childId === e.childId)
+    }));
+
+  return [...fromHousehold, ...fromEvents];
+}
+
+/** Step 6: base expenses + recurring/one-time event modifiers + education cost table */
+function computeExpenseLines(
+  household: Household,
+  year: number,
+  startYear: number,
+  rates: DeterministicRates,
+  recurringEvents: RecurringModifierEvent[],
+  oneTimeEvents: OneTimeEvent[],
+  children: ChildEducationInput[],
+  rules: RuleSet
+): ExpenseLine[] {
+  return [
+    ...annualBaseExpenses(household.baseExpenses, year, startYear, rates),
+    ...annualRecurringEvents(recurringEvents, year, startYear, rates),
+    ...annualOneTimeEvents(oneTimeEvents, year),
+    ...annualEducationExpenses(
+      children,
+      year,
+      startYear,
+      rates,
+      rules.educationCosts,
+      rules.childBenefits?.childcareCost
+    )
+  ];
 }
 
 /** Annual gross pay and social insurance for one person-year */
@@ -118,7 +186,7 @@ function computePersonYear(
 
 export function runDeterministic(
   household: Household,
-  _events: LifeEvent[],
+  events: LifeEvent[],
   assumptions: Assumptions,
   rules: RuleSet,
   options?: PipelineOptions
@@ -131,6 +199,10 @@ export function runDeterministic(
     ...household.persons.map((p) => parseYearMonth(p.birthYearMonth).year)
   );
   const endYear = oldestBirthYear + endAge;
+
+  const recurringEvents = events.filter((e): e is RecurringModifierEvent => e.type === "recurring");
+  const oneTimeEvents = events.filter((e): e is OneTimeEvent => e.type === "one-time");
+  const children = collectChildrenForEducation(household, events);
 
   // Phase 1: investment balances stay flat; cash accumulates net cash flow.
   const initialCash = household.financialAssets
@@ -160,7 +232,7 @@ export function runDeterministic(
     const econ = new Map<string, PersonYearEconomics>();
     const grossById = new Map<string, ReturnType<typeof computePersonYear>>();
     for (const person of household.persons) {
-      const age = ageInYear(person, year);
+      const age = ageInYear(person.birthYearMonth, year);
       ages[person.id] = age;
       grossById.set(person.id, computePersonYear(person, age, yearsElapsed, rates, rules));
     }
@@ -239,8 +311,17 @@ export function runDeterministic(
       });
     }
 
-    // Step 6: expenses
-    const expenseLines = annualBaseExpenses(household.baseExpenses, year, startYear, rates);
+    // Step 6: expenses (base items + recurring/one-time event modifiers + education costs)
+    const expenseLines = computeExpenseLines(
+      household,
+      year,
+      startYear,
+      rates,
+      recurringEvents,
+      oneTimeEvents,
+      children,
+      rules
+    );
     const totalExpenses = expenseLines.reduce((sum, l) => sum + l.amount, 0);
     const totalNet = Object.values(incomeRows).reduce((sum, r) => sum + r.net, 0);
     const totalBenefits = benefits.reduce((sum, b) => sum + b.amount, 0);

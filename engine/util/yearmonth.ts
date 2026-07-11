@@ -14,6 +14,15 @@ export function parseYearMonth(value: YearMonth): YM {
   return { year, month };
 }
 
+/**
+ * Age reached during the calendar year (= age on Dec 31; documented
+ * approximation shared by adult and child age calculations across the
+ * engine — sub-year precision is not modeled since AnnualRow is annual).
+ */
+export function ageInYear(birthYearMonth: YearMonth, year: number): number {
+  return year - parseYearMonth(birthYearMonth).year;
+}
+
 /** Number of months of `year` inside the inclusive window [from, to] */
 export function monthsActiveInYear(
   year: number,

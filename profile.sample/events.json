@@ -1,1 +1,25 @@
-[]
+[
+  {
+    "id": "edu-child-1",
+    "type": "education",
+    "childId": "child-1",
+    "stages": {
+      "nursery": "hoikuen",
+      "elementary": "public",
+      "juniorHigh": "public",
+      "highSchool": "public",
+      "university": "private-liberal",
+      "universityHousing": "home"
+    },
+    "extracurricularMonthly": [{ "fromAge": 6, "toAge": 15, "amount": 15000 }]
+  },
+  {
+    "id": "car-replacement",
+    "type": "recurring",
+    "label": "車の買い替え",
+    "startYearMonth": "2026-06",
+    "intervalYears": 7,
+    "amount": 3000000,
+    "indexation": "inflation"
+  }
+]

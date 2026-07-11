@@ -284,6 +284,8 @@ export interface RuleSet {
   furusatoNozei: FurusatoNozeiRules;
   childbirth?: ChildbirthRules;
   childBenefits?: ChildBenefitsRules;
+  /** Loaded separately from rules/education-costs.json and merged by the caller */
+  educationCosts?: EducationCosts;
   housingLoanTaxCredit?: HousingLoanTaxCreditRules;
   nisa?: NisaRules;
   capitalGainsTaxRate?: Rate;

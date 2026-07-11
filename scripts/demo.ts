@@ -9,7 +9,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Assumptions, Household, LifeEvent, RuleSet } from "../engine/types/index.js";
+import type { Assumptions, EducationCosts, Household, LifeEvent, RuleSet } from "../engine/types/index.js";
 import { runDeterministic } from "../engine/pipeline.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -26,13 +26,19 @@ function loadJson<T>(relativePath: string): T {
 const household = loadJson<Household>(path.join("profile.sample", "household.json"));
 const events = loadJson<LifeEvent[]>(path.join("profile.sample", "events.json"));
 const assumptions = loadJson<Assumptions>(path.join("profile.sample", "assumptions.json"));
-const rules = loadJson<RuleSet>(path.join("rules", "2026.json"));
+// rules/education-costs.json is a separate file (MEXT survey stats, not year-specific
+// tax/social-insurance policy) and is merged into the single RuleSet passed to the engine.
+const educationCosts = loadJson<EducationCosts>(path.join("rules", "education-costs.json"));
+const rules: RuleSet = {
+  ...loadJson<RuleSet>(path.join("rules", "2026.json")),
+  educationCosts
+};
 
 const result = runDeterministic(household, events, assumptions, rules);
 
 const yen = (v: number): string => (v / 10000).toFixed(0).padStart(7) + "万";
 
-console.log("=== lifeplan-sim フェーズ1 デモ: サンプル世帯(夫婦・子なし・賃貸) ===");
+console.log("=== lifeplan-sim フェーズ1-2 デモ: サンプル世帯(夫婦・子1人・賃貸) ===");
 console.log("※ 本ツールは税務相談・投資助言ではありません。制度の概算シミュレーションです。\n");
 console.log(
   "年    " +
@@ -75,5 +81,18 @@ if (first) {
           first.furusatoNozeiLimit[personId] ?? 0
         ).toLocaleString()}円`
     );
+  }
+  console.log("\n--- 初年度(2026)の支出内訳 ---");
+  for (const line of first.expenses) {
+    console.log(`${line.category}: ${line.amount.toLocaleString()}円`);
+  }
+}
+
+// 車の買い替え(7年ごと)が計上される年の支出内訳を確認
+const carYear = result.deterministic.find((row) => row.year === 2033);
+if (carYear) {
+  console.log("\n--- 車の買い替え年(2033)の支出内訳 ---");
+  for (const line of carYear.expenses) {
+    console.log(`${line.category}: ${line.amount.toLocaleString()}円`);
   }
 }
