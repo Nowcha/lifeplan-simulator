@@ -183,5 +183,80 @@
       "confirmedOn": "2026-07-11",
       "note": "総務省ふるさと納税ポータルサイト「税金の控除について」。住民税特例分は住民税所得割額の2割が上限、自己負担額は2,000円(寄附金控除の対象外)"
     }
+  },
+  "childbirth": {
+    "lumpSum": 500000,
+    "lumpSumWithoutObstetricCompensation": 488000,
+    "maternityAllowanceRate": 0.6667,
+    "maternityLeaveDays": {
+      "beforeBirth": 42,
+      "beforeBirthMultiple": 98,
+      "afterBirth": 56
+    },
+    "parentalLeaveBenefit": {
+      "rateFirst180Days": 0.67,
+      "rateAfter": 0.5,
+      "wageDailyCap": 16110,
+      "monthlyCapFirst": 323811,
+      "monthlyCapAfter": 241650,
+      "postnatalSupport": {
+        "rate": 0.13,
+        "maxDays": 28,
+        "bothParentsMinLeaveDays": 14
+      },
+      "socialInsuranceExemption": true,
+      "taxExempt": true
+    },
+    "_source": {
+      "url": "https://www.kyoukaikenpo.or.jp/faq/benefit/006/index.html",
+      "confirmedOn": "2026-07-11",
+      "note": "出産育児一時金: 協会けんぽFAQ、産科医療補償制度加入機関での妊娠22週以降の出産は1児50万円(未加入・22週未満は48.8万円)。出産手当金は標準報酬日額の2/3・産前42日(多胎98日)+産後56日(協会けんぽ https://www.kyoukaikenpo.or.jp/benefit/childbirth/001)。育児休業給付は180日まで67%・以降50%、休業開始時賃金日額の上限16,110円・支給上限(67%/30日)323,811円・(50%)241,650円は令和7年8月1日改定値で令和8年7月31日まで有効(厚労省 https://www.mhlw.go.jp/content/11600000/001461102.pdf)。※令和8年8月1日改定値は2026年7月末頃告示予定で未確定。出生後休業支援給付(2025-04創設)は原則両親とも14日以上の育休取得で最大28日+13%(合算80%、雇用保険法)。育休給付は非課税・社保算定対象外、社保免除は月末在籍または同月内14日以上(日本年金機構 https://www.nenkin.go.jp/shinsei/kounen/tekiyo/menjo/20140403-01.html)"
+    }
+  },
+  "childBenefits": {
+    "childAllowance": {
+      "ageBands": [
+        { "untilAge": 3, "monthly": 15000 },
+        { "untilAge": 18, "monthly": 10000 }
+      ],
+      "thirdChildMonthly": 30000,
+      "incomeLimit": null,
+      "countedChildUntilAge": 22,
+      "paymentMonths": [2, 4, 6, 8, 10, 12]
+    },
+    "tokyo018": {
+      "monthly": 5000,
+      "untilAge": 18,
+      "incomeLimit": null
+    },
+    "municipal": {
+      "koto-ku": [
+        {
+          "label": "バースデーサポート(1歳)",
+          "type": "one-time",
+          "atAge": 1,
+          "amount": { "first": 60000, "second": 70000, "thirdPlus": 80000 },
+          "inKind": true
+        }
+      ]
+    },
+    "childcareCost": {
+      "model": "tokyo-free-0to5",
+      "freeFromAge3": true,
+      "kindergartenMonthlyCap": 25700,
+      "tokyoZeroToTwoFree": true,
+      "authorizedNurseryMonthly": 0,
+      "mealCostMonthlyEstimate": 4500,
+      "_source": {
+        "url": "https://www.fukushi.metro.tokyo.lg.jp/kodomo/hoiku/mushouka",
+        "confirmedOn": "2026-07-11",
+        "note": "3〜5歳児は国の幼児教育・保育無償化で認可保育所等の保育料無償、幼稚園は月2.57万円上限(こども家庭庁 https://www.cfa.go.jp/policies/kokoseido/mushouka)。東京都は2025年9月から第1子含む0〜2歳の認可保育料も所得制限なしで無償化。よって東京都(江東区)在住では認可保育料本体は実質0円、給食費等の実費のみ世帯負担。副食費の目安は月4,500円相当で年収360万円未満相当世帯・第3子以降は免除。※認可保育料は本来世帯所得連動(自治体の階層区分)だが、東京都無償化により本モデルでは0円扱い"
+      }
+    },
+    "_source": {
+      "url": "https://www.cfa.go.jp/policies/kokoseido/jidouteate/annai/",
+      "confirmedOn": "2026-07-11",
+      "note": "児童手当(2024年10月拡充後・こども家庭庁): 3歳未満は第1子/第2子15,000円、3歳〜高校生年代(18歳到達後最初の3月31日まで)は10,000円、第3子以降は全年齢30,000円。所得制限は撤廃。多子加算のカウントは大学生年代(22歳到達後最初の3月31日まで)の子まで。支給は偶数月(2/4/6/8/10/12月)年6回。東京都018サポートは0〜18歳(年度末まで)に月5,000円・所得制限なし(東京都福祉局 https://www.fukushi.metro.tokyo.lg.jp/kodomo/kosodate/018)。江東区バースデーサポートは1歳時にギフトカードを出生順位別(第1子6万/第2子7万/第3子以降8万)で支給(令和6年4月1日以降生まれ、江東区 https://www.city.koto.lg.jp/260501/kodomo/ninshinshussan/ninshin/97553.html)"
+    }
   }
 }

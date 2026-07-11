@@ -1,0 +1,85 @@
+{
+  "_notes": [
+    "教育費テーブル。幼稚園〜高校は文科省「令和5年度子供の学習費調査」(2024-12-25公表)の学校種別『学習費総額』(学校教育費+学校給食費+学校外活動費)の年額。大学は文科省統計(国立=省令標準額、私立=令和5年度学生納付金等調査)。",
+    "指数(indexation)='education': 教育費インフレは一般CPIより高めに設定可能。実際の上昇率係数は assumptions 側で供給する。",
+    "高校の学習費総額は就学支援金反映後の実支出。2025年度以降の高校授業料無償化拡充(私立含む・所得制限撤廃の段階実施)により私立高校の総額は今後低下する可能性がある(改正が流動的)。",
+    "保育所(hoikuen)利用時の費用は education-costs ではなく rules/2026.json childBenefits.childcareCost を参照(東京都は0〜5歳無償化)。"
+  ],
+  "indexation": "education",
+  "school": {
+    "kindergarten": {
+      "public": { "annual": 184646 },
+      "private": { "annual": 347338 },
+      "_source": {
+        "url": "https://www.mext.go.jp/b_menu/toukei/chousa03/gakushuuhi/kekka/k_detail/mext_00002.html",
+        "confirmedOn": "2026-07-11",
+        "note": "令和5年度子供の学習費調査 表1 学習費総額(年額)。幼稚園 公立184,646円/私立347,338円。結果のポイント: https://www.mext.go.jp/content/20260116-mxt_chousa01-000039333_1.pdf"
+      }
+    },
+    "elementary": {
+      "public": { "annual": 336265 },
+      "private": { "annual": 1828112 },
+      "_source": {
+        "url": "https://www.mext.go.jp/b_menu/toukei/chousa03/gakushuuhi/kekka/k_detail/mext_00002.html",
+        "confirmedOn": "2026-07-11",
+        "note": "令和5年度子供の学習費調査 表1 学習費総額(年額)。小学校 公立336,265円/私立1,828,112円"
+      }
+    },
+    "juniorHigh": {
+      "public": { "annual": 542475 },
+      "private": { "annual": 1560359 },
+      "_source": {
+        "url": "https://www.mext.go.jp/b_menu/toukei/chousa03/gakushuuhi/kekka/k_detail/mext_00002.html",
+        "confirmedOn": "2026-07-11",
+        "note": "令和5年度子供の学習費調査 表1 学習費総額(年額)。中学校 公立542,475円/私立1,560,359円"
+      }
+    },
+    "highSchool": {
+      "public": { "annual": 597752 },
+      "private": { "annual": 1030283 },
+      "_source": {
+        "url": "https://www.mext.go.jp/b_menu/toukei/chousa03/gakushuuhi/kekka/k_detail/mext_00002.html",
+        "confirmedOn": "2026-07-11",
+        "note": "令和5年度子供の学習費調査 表1 学習費総額(年額)。高等学校(全日制) 公立597,752円/私立1,030,283円。就学支援金反映後の実支出。私立は2025年度以降の無償化拡充で今後低下する可能性あり"
+      }
+    }
+  },
+  "university": {
+    "national": {
+      "admissionFee": 282000,
+      "annualTuition": 535800,
+      "facilityFeeAnnual": 0,
+      "_source": {
+        "url": "https://laws.e-gov.go.jp/law/416M60000080016",
+        "confirmedOn": "2026-07-11",
+        "note": "国立大学等の授業料その他の費用に関する省令(標準額): 入学料282,000円・授業料年535,800円。各国立大学は標準額の120%を上限に個別設定可(近年一部大学が値上げ)。文科省 https://www.mext.go.jp/a_menu/koutou/houjin/1335932.htm"
+      }
+    },
+    "privateLiberal": {
+      "admissionFee": 223867,
+      "annualTuition": 827135,
+      "facilityFeeAnnual": 143838,
+      "_source": {
+        "url": "https://www.mext.go.jp/a_menu/koutou/shinkou/07021403/1412031_00005.htm",
+        "confirmedOn": "2026-07-11",
+        "note": "私立大学等の令和5年度入学者に係る学生納付金等調査(文科省)。文科系学部 平均: 授業料827,135円・入学料223,867円・施設設備費143,838円"
+      }
+    },
+    "privateScience": {
+      "admissionFee": 234756,
+      "annualTuition": 1162738,
+      "facilityFeeAnnual": 132956,
+      "_source": {
+        "url": "https://www.mext.go.jp/a_menu/koutou/shinkou/07021403/1412031_00005.htm",
+        "confirmedOn": "2026-07-11",
+        "note": "私立大学等の令和5年度入学者に係る学生納付金等調査(文科省)。理科系学部 平均: 授業料1,162,738円・入学料234,756円・施設設備費132,956円(医歯系は別枠でさらに高額)"
+      }
+    },
+    "boardingAllowanceMonthly": 74652,
+    "_sourceBoarding": {
+      "url": "https://www.univcoop.or.jp/vision/vision_1896.html",
+      "confirmedOn": "2026-07-11",
+      "note": "全国大学生活協同組合連合会 第61回学生生活実態調査(2025年発表)。下宿生の仕送り平均 月額74,652円。※政府統計ではなく大学生協連(民間団体)の調査値。概要報告PDF: https://www.univcoop.or.jp/press/life/pdf/pdf_report60.pdf (第60回) 参照"
+    }
+  }
+}
