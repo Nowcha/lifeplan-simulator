@@ -1,0 +1,29 @@
+{
+  "simulation": { "startYear": 2026, "endAge": 65, "paths": 10000, "seed": 42 },
+  "inflation": { "mean": 0.015, "volatility": 0.01 },
+  "wageGrowth": { "mean": 0.02, "volatility": 0.012 },
+  "assetClasses": [
+    { "id": "global-equity", "expectedReturn": 0.05, "volatility": 0.18 },
+    { "id": "bonds", "expectedReturn": 0.015, "volatility": 0.05 },
+    { "id": "cash", "expectedReturn": 0.0, "volatility": 0.0 }
+  ],
+  "correlationMatrix": {
+    "factors": ["global-equity", "bonds", "inflation", "base-rate"],
+    "matrix": [
+      [1.0, 0.2, 0.1, 0.15],
+      [0.2, 1.0, -0.1, 0.4],
+      [0.1, -0.1, 1.0, 0.5],
+      [0.15, 0.4, 0.5, 1.0]
+    ]
+  },
+  "baseRate": {
+    "initial": 0.005,
+    "model": "manual",
+    "manualPath": [
+      { "year": 2026, "rate": 0.005 },
+      { "year": 2031, "rate": 0.01 },
+      { "year": 2041, "rate": 0.015 }
+    ]
+  },
+  "deterministicOverride": { "inflation": 0.015, "wage-growth": 0.02 }
+}

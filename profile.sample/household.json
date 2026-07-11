@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "persons": [
+    {
+      "id": "partner-a",
+      "birthYearMonth": "1991-04",
+      "employment": { "type": "salaried", "healthInsurance": "kyokai-kenpo" },
+      "incomeCurve": [
+        { "age": 35, "monthlyBase": 380000, "bonusAnnual": 1440000, "indexation": "wage" },
+        { "age": 45, "monthlyBase": 460000, "bonusAnnual": 1800000, "indexation": "wage" },
+        { "age": 55, "monthlyBase": 500000, "bonusAnnual": 2000000, "indexation": "wage" },
+        { "age": 60, "monthlyBase": 400000, "bonusAnnual": 1200000, "indexation": "wage" }
+      ],
+      "retirementAge": 65,
+      "deductions": {}
+    },
+    {
+      "id": "partner-b",
+      "birthYearMonth": "1993-08",
+      "employment": { "type": "salaried", "healthInsurance": "kyokai-kenpo" },
+      "incomeCurve": [
+        { "age": 33, "monthlyBase": 290000, "bonusAnnual": 870000, "indexation": "wage" },
+        { "age": 45, "monthlyBase": 350000, "bonusAnnual": 1050000, "indexation": "wage" },
+        { "age": 60, "monthlyBase": 300000, "bonusAnnual": 600000, "indexation": "wage" }
+      ],
+      "retirementAge": 65,
+      "deductions": {}
+    }
+  ],
+  "children": [],
+  "municipality": "koto-ku",
+  "baseExpenses": [
+    { "label": "住居費(賃貸)", "monthly": 150000, "indexation": "fixed" },
+    { "label": "食費", "monthly": 75000, "indexation": "inflation" },
+    { "label": "水道光熱費", "monthly": 22000, "indexation": "inflation" },
+    { "label": "通信費", "monthly": 12000, "indexation": "fixed" },
+    { "label": "保険料", "monthly": 15000, "indexation": "fixed" },
+    { "label": "趣味・交際費", "monthly": 60000, "indexation": "inflation" },
+    { "label": "雑費", "monthly": 30000, "indexation": "inflation" }
+  ],
+  "financialAssets": [
+    { "assetClassId": "cash", "account": "cash", "balance": 6000000, "costBasis": 6000000 },
+    {
+      "assetClassId": "global-equity",
+      "account": "nisa-tsumitate",
+      "balance": 2600000,
+      "costBasis": 2400000,
+      "nisaLifetimeUsed": 2400000
+    }
+  ],
+  "savingsPolicy": {
+    "cashBufferMonths": 6,
+    "contributions": [
+      { "account": "nisa-tsumitate", "monthlyCap": 100000, "assetClassId": "global-equity" },
+      { "account": "nisa-growth", "monthlyCap": 100000, "assetClassId": "global-equity" }
+    ],
+    "drawdown": {
+      "strategy": "fixed-amount",
+      "value": 3600000,
+      "order": ["taxable", "nisa-growth", "nisa-tsumitate"]
+    }
+  }
+}
