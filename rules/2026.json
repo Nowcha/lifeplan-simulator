@@ -1,0 +1,178 @@
+{
+  "year": 2026,
+  "_notes": [
+    "令和8年分(2026年)の税制・社会保険パラメータ。フェーズ1スコープ(所得税・住民税・社会保険)のみ。",
+    "社会保険料率は令和8年度(2026年3月分〜)の率を暦年2026全体に適用する近似(1〜2月は厳密には令和7年度率、子ども・子育て支援金は4月分〜)。",
+    "住民税の給与所得計算は所得税と同一の表を使用する簡易化(令和8年度課税分の低所得帯で厳密には差異が出るが、本エンジンの対象所得帯では影響なし)。"
+  ],
+  "incomeTax": {
+    "_source": {
+      "url": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/2260.htm",
+      "confirmedOn": "2026-07-11",
+      "note": "所得税の速算表(税率5〜45%・控除額)。令和7年4月1日現在法令、令和8年分も同一"
+    },
+    "brackets": [
+      { "upTo": 1949000, "rate": 0.05, "deduction": 0 },
+      { "upTo": 3299000, "rate": 0.1, "deduction": 97500 },
+      { "upTo": 6949000, "rate": 0.2, "deduction": 427500 },
+      { "upTo": 8999000, "rate": 0.23, "deduction": 636000 },
+      { "upTo": 17999000, "rate": 0.33, "deduction": 1536000 },
+      { "upTo": 39999000, "rate": 0.4, "deduction": 2796000 },
+      { "upTo": null, "rate": 0.45, "deduction": 4796000 }
+    ],
+    "salaryIncomeNet": {
+      "_source": {
+        "url": "https://www.nta.go.jp/publication/pamph/gensen/2026kaisei.pdf",
+        "confirmedOn": "2026-07-11",
+        "note": "源泉所得税の改正のあらまし(令和8年4月・国税庁)。令和8・9年分: 給与所得控除最低保障74万円、収入69.1万〜220万円の特別区分表、220万円超は従来通り(別表第五の1/4端数処理)"
+      },
+      "pieces": [
+        { "upTo": 740999, "type": "zero" },
+        { "upTo": 2190999, "type": "minus", "value": 740000 },
+        { "upTo": 2192999, "type": "fixed", "value": 1451000 },
+        { "upTo": 2195999, "type": "fixed", "value": 1453000 },
+        { "upTo": 2199999, "type": "fixed", "value": 1456000 },
+        { "upTo": 3599999, "type": "quarter", "multiplier": 2.8, "adjust": -80000 },
+        { "upTo": 6599999, "type": "quarter", "multiplier": 3.2, "adjust": -440000 },
+        { "upTo": 8499999, "type": "rate", "rate": 0.9, "adjust": -1100000 },
+        { "upTo": null, "type": "minus", "value": 1950000 }
+      ]
+    },
+    "basicDeduction": {
+      "_source": {
+        "url": "https://www.nta.go.jp/publication/pamph/gensen/2026kaisei.pdf",
+        "confirmedOn": "2026-07-11",
+        "note": "令和8年度税制改正: 基礎控除は本則62万円+租特法加算。令和8・9年分は合計所得489万以下104万/655万以下67万/2,350万以下62万。2,350万超の逓減(48/32/16/0)は改正なし"
+      },
+      "steps": [
+        { "incomeUpTo": 4890000, "amount": 1040000 },
+        { "incomeUpTo": 6550000, "amount": 670000 },
+        { "incomeUpTo": 23500000, "amount": 620000 },
+        { "incomeUpTo": 24000000, "amount": 480000 },
+        { "incomeUpTo": 24500000, "amount": 320000 },
+        { "incomeUpTo": 25000000, "amount": 160000 },
+        { "incomeUpTo": null, "amount": 0 }
+      ]
+    },
+    "spouseDeduction": {
+      "_source": {
+        "url": "https://www.nta.go.jp/publication/pamph/gensen/2026kaisei.pdf",
+        "confirmedOn": "2026-07-11",
+        "note": "令和8年度改正: 同一生計配偶者の所得要件は62万円以下(給与収入136万円以下)。控除額38/26/13万円(本人合計所得900/950/1,000万円区分)は従来通り。配偶者特別控除(配偶者所得62万超133万以下)はフェーズ2でテーブル追加予定"
+      },
+      "spouseIncomeMax": 620000,
+      "steps": [
+        { "ownerIncomeUpTo": 9000000, "amount": 380000 },
+        { "ownerIncomeUpTo": 9500000, "amount": 260000 },
+        { "ownerIncomeUpTo": 10000000, "amount": 130000 },
+        { "ownerIncomeUpTo": null, "amount": 0 }
+      ]
+    },
+    "reconstructionSurtax": 0.021
+  },
+  "residentTax": {
+    "_source": {
+      "url": "https://www.tax.metro.tokyo.lg.jp/kazei/kojin_ju.html",
+      "confirmedOn": "2026-07-11",
+      "note": "東京都主税局・個人住民税: 所得割は都民税4%+区市町村民税6%、均等割は都民税1,000円+区市町村民税3,000円+森林環境税(国税)1,000円(令和6年度〜)、調整控除5%(都2%+区3%)。基礎控除43万円(合計所得2,400万円以下)・配偶者控除33万円は地方税法の従来値(令和8年度改正の対象外)"
+    },
+    "cityRate": 0.06,
+    "prefRate": 0.04,
+    "perCapita": { "city": 3000, "pref": 1000, "forestEnvironmentTax": 1000 },
+    "basicDeduction": {
+      "steps": [
+        { "incomeUpTo": 24000000, "amount": 430000 },
+        { "incomeUpTo": 24500000, "amount": 290000 },
+        { "incomeUpTo": 25000000, "amount": 150000 },
+        { "incomeUpTo": null, "amount": 0 }
+      ]
+    },
+    "spouseDeduction": {
+      "spouseIncomeMax": 620000,
+      "steps": [
+        { "ownerIncomeUpTo": 9000000, "amount": 330000 },
+        { "ownerIncomeUpTo": 9500000, "amount": 220000 },
+        { "ownerIncomeUpTo": 10000000, "amount": 110000 },
+        { "ownerIncomeUpTo": null, "amount": 0 }
+      ]
+    },
+    "adjustmentCredit": {
+      "basicDeductionGap": 50000,
+      "spouseDeductionGap": 50000,
+      "threshold": 2000000,
+      "rateCity": 0.03,
+      "ratePref": 0.02,
+      "minimum": 2500,
+      "incomeLimit": 25000000
+    },
+    "nonTaxableIncomeSingle": 450000
+  },
+  "socialInsurance": {
+    "_source": {
+      "url": "https://www.kyoukaikenpo.or.jp/assets/R8_13tokyo.pdf",
+      "confirmedOn": "2026-07-11",
+      "note": "令和8年3月分(4月納付分)からの健康保険・厚生年金保険の保険料額表(東京支部)。健保9.85%(令和8年3月分〜)、介護1.62%(全国一律)、子ども・子育て支援金0.23%(令和8年4月分〜)、厚年18.3%(平成29年9月分〜)。いずれも労使折半。雇用保険は令和8年度の労働者負担率0.5%(一般の事業): https://www.mhlw.go.jp/content/001692566.pdf"
+    },
+    "kyokaiKenpoRateTokyo": 0.0985,
+    "nursingCareRate": 0.0162,
+    "childSupportLevyRate": 0.0023,
+    "pensionRate": 0.183,
+    "employmentInsuranceEmployeeRate": 0.005,
+    "bonusCapHealthAnnual": 5730000,
+    "bonusCapPensionMonthly": 1500000,
+    "pensionStandardMin": 88000,
+    "pensionStandardMax": 650000,
+    "standardMonthlyTable": [
+      { "grade": 1, "standard": 58000, "from": 0, "to": 63000 },
+      { "grade": 2, "standard": 68000, "from": 63000, "to": 73000 },
+      { "grade": 3, "standard": 78000, "from": 73000, "to": 83000 },
+      { "grade": 4, "standard": 88000, "from": 83000, "to": 93000 },
+      { "grade": 5, "standard": 98000, "from": 93000, "to": 101000 },
+      { "grade": 6, "standard": 104000, "from": 101000, "to": 107000 },
+      { "grade": 7, "standard": 110000, "from": 107000, "to": 114000 },
+      { "grade": 8, "standard": 118000, "from": 114000, "to": 122000 },
+      { "grade": 9, "standard": 126000, "from": 122000, "to": 130000 },
+      { "grade": 10, "standard": 134000, "from": 130000, "to": 138000 },
+      { "grade": 11, "standard": 142000, "from": 138000, "to": 146000 },
+      { "grade": 12, "standard": 150000, "from": 146000, "to": 155000 },
+      { "grade": 13, "standard": 160000, "from": 155000, "to": 165000 },
+      { "grade": 14, "standard": 170000, "from": 165000, "to": 175000 },
+      { "grade": 15, "standard": 180000, "from": 175000, "to": 185000 },
+      { "grade": 16, "standard": 190000, "from": 185000, "to": 195000 },
+      { "grade": 17, "standard": 200000, "from": 195000, "to": 210000 },
+      { "grade": 18, "standard": 220000, "from": 210000, "to": 230000 },
+      { "grade": 19, "standard": 240000, "from": 230000, "to": 250000 },
+      { "grade": 20, "standard": 260000, "from": 250000, "to": 270000 },
+      { "grade": 21, "standard": 280000, "from": 270000, "to": 290000 },
+      { "grade": 22, "standard": 300000, "from": 290000, "to": 310000 },
+      { "grade": 23, "standard": 320000, "from": 310000, "to": 330000 },
+      { "grade": 24, "standard": 340000, "from": 330000, "to": 350000 },
+      { "grade": 25, "standard": 360000, "from": 350000, "to": 370000 },
+      { "grade": 26, "standard": 380000, "from": 370000, "to": 395000 },
+      { "grade": 27, "standard": 410000, "from": 395000, "to": 425000 },
+      { "grade": 28, "standard": 440000, "from": 425000, "to": 455000 },
+      { "grade": 29, "standard": 470000, "from": 455000, "to": 485000 },
+      { "grade": 30, "standard": 500000, "from": 485000, "to": 515000 },
+      { "grade": 31, "standard": 530000, "from": 515000, "to": 545000 },
+      { "grade": 32, "standard": 560000, "from": 545000, "to": 575000 },
+      { "grade": 33, "standard": 590000, "from": 575000, "to": 605000 },
+      { "grade": 34, "standard": 620000, "from": 605000, "to": 635000 },
+      { "grade": 35, "standard": 650000, "from": 635000, "to": 665000 },
+      { "grade": 36, "standard": 680000, "from": 665000, "to": 695000 },
+      { "grade": 37, "standard": 710000, "from": 695000, "to": 730000 },
+      { "grade": 38, "standard": 750000, "from": 730000, "to": 770000 },
+      { "grade": 39, "standard": 790000, "from": 770000, "to": 810000 },
+      { "grade": 40, "standard": 830000, "from": 810000, "to": 855000 },
+      { "grade": 41, "standard": 880000, "from": 855000, "to": 905000 },
+      { "grade": 42, "standard": 930000, "from": 905000, "to": 955000 },
+      { "grade": 43, "standard": 980000, "from": 955000, "to": 1005000 },
+      { "grade": 44, "standard": 1030000, "from": 1005000, "to": 1055000 },
+      { "grade": 45, "standard": 1090000, "from": 1055000, "to": 1115000 },
+      { "grade": 46, "standard": 1150000, "from": 1115000, "to": 1175000 },
+      { "grade": 47, "standard": 1210000, "from": 1175000, "to": 1235000 },
+      { "grade": 48, "standard": 1270000, "from": 1235000, "to": 1295000 },
+      { "grade": 49, "standard": 1330000, "from": 1295000, "to": 1355000 },
+      { "grade": 50, "standard": 1390000, "from": 1355000, "to": null }
+    ]
+  }
+}
