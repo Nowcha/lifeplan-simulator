@@ -1,0 +1,22 @@
+{
+  "name": "lifeplan-sim",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "High-precision life plan simulator (pure TS engine, deterministic core + Monte Carlo wrapper)",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint engine scripts",
+    "demo": "tsx scripts/demo.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.19.0",
+    "vitest": "^2.1.8"
+  }
+}

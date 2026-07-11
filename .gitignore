@@ -1,0 +1,7 @@
+node_modules/
+profile/
+dist/
+coverage/
+*.log
+files.zip
+.claude/settings.local.json
