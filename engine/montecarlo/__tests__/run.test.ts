@@ -105,3 +105,50 @@ describe("runMonteCarlo", () => {
     expect(largeDiff).toBeLessThanOrEqual(smallDiff * 3); // 大標本が極端に悪化していないことの健全性チェック
   });
 });
+
+// 支出が収入・資産を大きく上回り、リターンの確率変動に関わらず必ず資産が
+// 枯渇する世帯 — depletionAgeDistribution の健全性を確実に検証するため。
+const depletingHousehold: Household = {
+  schemaVersion: 1,
+  persons: [
+    {
+      id: "solo",
+      birthYearMonth: "1990-01",
+      employment: { type: "salaried", healthInsurance: "kyokai-kenpo" },
+      incomeCurve: [{ age: 0, monthlyBase: 150000, bonusAnnual: 0, indexation: "fixed" }],
+      retirementAge: 65,
+      deductions: {}
+    }
+  ],
+  children: [],
+  municipality: "koto-ku",
+  baseExpenses: [{ label: "生活費", monthly: 400000, indexation: "fixed" }],
+  financialAssets: [
+    { assetClassId: "cash", account: "cash", balance: 1000000, costBasis: 1000000 },
+    { assetClassId: "global-equity", account: "taxable", balance: 1000000, costBasis: 1000000 }
+  ],
+  savingsPolicy: {
+    cashBufferMonths: 1,
+    contributions: [],
+    drawdown: { strategy: "fixed-amount", value: 0, order: ["taxable"] }
+  }
+};
+
+describe("runMonteCarlo: depletionAgeDistribution", () => {
+  test("必ず枯渇する世帯では全試行分の年齢が記録され、depletionProbabilityは1になる", () => {
+    const assumptions = makeAssumptions({ paths: 20 });
+    const result = runMonteCarlo(depletingHousehold, [], assumptions, rules);
+    expect(result.depletionProbability).toBe(1);
+    expect(result.depletionAgeDistribution).toHaveLength(20);
+    for (const age of result.depletionAgeDistribution ?? []) {
+      expect(age).toBeGreaterThanOrEqual(36); // 1990年生まれ、シミュレーション開始(2026年)時点の年齢
+      expect(age).toBeLessThanOrEqual(36 + 40);
+    }
+  });
+
+  test("枯渇しない世帯ではdepletionAgeDistributionが空", () => {
+    const assumptions = makeAssumptions({ paths: 20 });
+    const result = runMonteCarlo(household, [], assumptions, rules);
+    expect(result.depletionAgeDistribution).toEqual([]);
+  });
+});

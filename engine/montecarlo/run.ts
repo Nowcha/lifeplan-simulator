@@ -28,11 +28,16 @@ export function runMonteCarlo(
   // Mirrors pipeline.ts's own endYear derivation (oldest person reaches endAge).
   const oldestBirthYear = Math.min(...household.persons.map((p) => parseYearMonth(p.birthYearMonth).year));
   const endYear = oldestBirthYear + endAge;
+  const oldestPersonId = household.persons.find(
+    (p) => parseYearMonth(p.birthYearMonth).year === oldestBirthYear
+  )?.id;
 
   const rng = createRng(seed);
   const netWorthByTrial: Yen[][] = [];
   /** 現金+換金可能資産(design doc §7 depletionProbabilityの定義対象、netWorthとは異なり住宅評価額・ローン残高を含まない) */
   const liquidAssetsByTrial: Yen[][] = [];
+  /** 枯渇した試行について、最年長者(endAgeの基準人物)が最初に枯渇した年の年齢 */
+  const depletionAges: number[] = [];
 
   for (let trial = 0; trial < paths; trial++) {
     const factorPaths = generateFactorPaths(assumptions, startYear, endYear, rng);
@@ -43,17 +48,24 @@ export function runMonteCarlo(
       ...pipelineOptions,
       stochasticPaths: { baseRate: baseRateMap, assetReturns: factorPaths.assetReturns }
     });
+    const rows = result.deterministic;
 
-    netWorthByTrial.push(result.deterministic.map((row) => row.netWorth));
-    liquidAssetsByTrial.push(
-      result.deterministic.map(
-        (row) => row.cashBalance + Object.values(row.invest.balances).reduce((sum, v) => sum + v, 0)
-      )
+    netWorthByTrial.push(rows.map((row) => row.netWorth));
+    const liquidAssets = rows.map(
+      (row) => row.cashBalance + Object.values(row.invest.balances).reduce((sum, v) => sum + v, 0)
     );
+    liquidAssetsByTrial.push(liquidAssets);
+
+    if (oldestPersonId) {
+      const depletionYearIndex = liquidAssets.findIndex((v) => v < 0);
+      const age = depletionYearIndex === -1 ? undefined : rows[depletionYearIndex]?.ages[oldestPersonId];
+      if (age !== undefined) depletionAges.push(age);
+    }
   }
 
   return {
     percentiles: computePercentiles(netWorthByTrial, DEFAULT_PERCENTILES),
-    depletionProbability: computeDepletionProbability(liquidAssetsByTrial)
+    depletionProbability: computeDepletionProbability(liquidAssetsByTrial),
+    depletionAgeDistribution: depletionAges
   };
 }
