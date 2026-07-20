@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+/*
+ * デザイントークン(落ち着いたエディトリアル・ダッシュボード方向性)。
+ * 温かみのあるインク+紙色をベースに、単一アクセント(琥珀)で強調する。
+ * 数値の信頼性を優先し、装飾的な色は使わない。
+ */
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+
+  --color-page: #f9f7f2;
+  --color-surface: #ffffff;
+  --color-surface-2: #f3f1ea;
+  --color-ink: #17150f;
+  --color-ink-secondary: #55524a;
+  --color-ink-muted: #8c887c;
+  --color-hairline: #e4e0d5;
+  --color-hairline-strong: #c9c4b5;
+
+  --color-amber-100: #f6e6cf;
+  --color-amber-200: #ecd3ab;
+  --color-amber-300: #e8bf87;
+  --color-amber-500: #b8752c;
+  --color-amber-700: #8a5620;
+
+  --color-good: #0ca30c;
+  --color-critical: #c1352b;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
