@@ -23,6 +23,25 @@ export function ageInYear(birthYearMonth: YearMonth, year: number): number {
   return year - parseYearMonth(birthYearMonth).year;
 }
 
+/** Absolute month ordinal (year * 12 + month - 1) for month arithmetic */
+export function monthOrdinal(value: YearMonth): number {
+  const { year, month } = parseYearMonth(value);
+  return year * 12 + (month - 1);
+}
+
+/**
+ * Ordinal of the last month ("YYYY-03") of the fiscal year in which the
+ * person reaches `age` — i.e. the March containing the first March 31 on or
+ * after the birthday. Used for 児童手当 / 018サポート style "◯歳到達後最初の
+ * 年度末まで" eligibility windows.
+ */
+export function fiscalYearEndOrdinal(birthYearMonth: YearMonth, age: number): number {
+  const birth = parseYearMonth(birthYearMonth);
+  const reachedYear = birth.year + age;
+  const endYear = birth.month >= 4 ? reachedYear + 1 : reachedYear;
+  return endYear * 12 + (3 - 1);
+}
+
 /** Number of months of `year` inside the inclusive window [from, to] */
 export function monthsActiveInYear(
   year: number,

@@ -57,13 +57,14 @@ describe("決定論パイプライン (サンプル世帯)", () => {
     }
   });
 
-  test("現金残高は毎年の収支の累積になっている", () => {
+  test("現金残高は毎年の収支(手取り+給付−支出)の累積になっている", () => {
     const first = rows[0];
     expect(first).toBeDefined();
     if (!first) return;
     const netTotal = Object.values(first.income).reduce((s, r) => s + r.net, 0);
+    const benefitTotal = first.benefits.reduce((s, b) => s + b.amount, 0);
     const expenseTotal = first.expenses.reduce((s, e) => s + e.amount, 0);
-    expect(first.cashBalance).toBe(6000000 + netTotal - expenseTotal);
+    expect(first.cashBalance).toBe(6000000 + netTotal + benefitTotal - expenseTotal);
   });
 
   test("同一入力で結果が再現する(純粋関数)", () => {

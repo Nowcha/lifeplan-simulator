@@ -1,8 +1,12 @@
 /**
  * Annual pipeline (design doc §8, Phase 1-2 scope = steps 1-6):
- *  1. income (curve interpolation x wage indexation)
- *  2. social insurance (standard monthly grade, bonus, employment insurance)
- *  3. benefits — STUB until the benefits task lands (returns [])
+ *  1. income (curve interpolation x wage indexation; maternity/parental
+ *     leave months replace pay with zero, short-hours factor on return)
+ *  2. social insurance (standard monthly grade, bonus, employment insurance;
+ *     leave months exempted per statute / rules flag)
+ *  3. benefits (childbirth lump sum, maternity allowance, parental leave
+ *     benefit, child allowance, Tokyo 018, municipal) — all tax-exempt, so
+ *     they enter cash flow directly and never touch steps 4-5
  *  4. income tax (salary income deduction → deductions → brackets → surtax)
  *  5. resident tax — levied on the PREVIOUS year's income
  *  6. expenses (base items x indexation + recurring/one-time event modifiers
@@ -28,6 +32,7 @@ import type {
   RecurringModifierEvent,
   RuleSet,
   SimulationResult,
+  SocialInsuranceRules,
   Yen
 } from "./types/index.js";
 import { bonusAnnualAt, indexFactor, indexationAt, monthlyBaseAt } from "./income/curve.js";
@@ -38,7 +43,15 @@ import { salaryIncome } from "./tax/salaryIncome.js";
 import { computeIncomeTax } from "./tax/incomeTax.js";
 import { computeResidentTax } from "./tax/residentTax.js";
 import { furusatoNozeiLimit } from "./tax/furusato.js";
-import { bonusPremiums, employmentInsurance, monthlyPremiums } from "./tax/socialInsurance.js";
+import {
+  bonusPremiums,
+  employmentInsurance,
+  lookupStandardMonthly,
+  monthlyPremiums
+} from "./tax/socialInsurance.js";
+import { annualChildbirthBenefits, type BenefitLine, type LeaveWageBasis } from "./benefits/childbirth.js";
+import { annualChildBenefits } from "./benefits/childAllowance.js";
+import { monthlyLeavePlan, type MonthWorkPlan } from "./benefits/leave.js";
 import { ageInYear, parseYearMonth } from "./util/yearmonth.js";
 
 export interface PipelineOptions {
@@ -131,22 +144,60 @@ function computeExpenseLines(
   ];
 }
 
+/** Monthly pay and employee premiums summed over the 12-month work plan */
+function monthlyPayrollTotals(
+  months: MonthWorkPlan[],
+  monthlyPay: Yen,
+  isCareInsured: boolean,
+  kumiaiEmployeeRate: Rate | undefined,
+  si: SocialInsuranceRules
+): { payTotal: Yen; premiumTotal: Yen } {
+  const premiumsFor = (pay: Yen): Yen => {
+    const input = { monthlyPay: pay, isCareInsured, rules: si } as const;
+    return (
+      kumiaiEmployeeRate !== undefined
+        ? monthlyPremiums({ ...input, kumiaiEmployeeRate })
+        : monthlyPremiums(input)
+    ).total;
+  };
+
+  let payTotal = 0;
+  let premiumTotal = 0;
+  for (const month of months) {
+    const pay = Math.floor(monthlyPay * month.payFactor);
+    payTotal += pay;
+    if (pay > 0) {
+      premiumTotal += premiumsFor(pay) + employmentInsurance(pay, si);
+    } else if (!month.siExempt) {
+      // Leave month without statutory exemption: premiums continue on the
+      // pre-leave standard monthly (no pay, so no employment insurance).
+      premiumTotal += premiumsFor(monthlyPay);
+    }
+  }
+  return { payTotal, premiumTotal };
+}
+
+/** Bonus installment month indices (June/December) — documented simplification */
+const BONUS_MONTH_INDICES = [5, 11] as const;
+
 /** Annual gross pay and social insurance for one person-year */
 function computePersonYear(
   person: Person,
   age: number,
   yearsElapsed: number,
   rates: { inflation: Rate; wage: Rate },
-  rules: RuleSet
+  rules: RuleSet,
+  months: MonthWorkPlan[]
 ): { gross: Yen; monthlyPay: Yen; bonusAnnual: Yen; socialInsurance: Yen } {
   const isWorking = person.employment.type === "salaried" && age < person.retirementAge;
   if (!isWorking) return { gross: 0, monthlyPay: 0, bonusAnnual: 0, socialInsurance: 0 };
 
   const factor = indexFactor(indexationAt(person.incomeCurve, age), yearsElapsed, rates);
   const monthlyPay = Math.floor(monthlyBaseAt(person.incomeCurve, age) * factor);
-  const bonusAnnual = Math.floor(bonusAnnualAt(person.incomeCurve, age) * factor);
-  const gross = monthlyPay * 12 + bonusAnnual;
-  if (gross <= 0) return { gross: 0, monthlyPay: 0, bonusAnnual: 0, socialInsurance: 0 };
+  const bonusAnnualFull = Math.floor(bonusAnnualAt(person.incomeCurve, age) * factor);
+  if (monthlyPay * 12 + bonusAnnualFull <= 0) {
+    return { gross: 0, monthlyPay: 0, bonusAnnual: 0, socialInsurance: 0 };
+  }
 
   // 介護保険第2号被保険者 (40-64). Year-granularity approximation:
   // applied for the whole year in which the person turns 40 / stops at 65.
@@ -155,33 +206,40 @@ function computePersonYear(
     person.employment.healthInsurance === "kumiai" ? person.employment.kumiaiRate : undefined;
   const si = rules.socialInsurance;
 
-  const premiumInput = { monthlyPay, isCareInsured, rules: si } as const;
-  const monthly =
-    kumiaiEmployeeRate !== undefined
-      ? monthlyPremiums({ ...premiumInput, kumiaiEmployeeRate })
-      : monthlyPremiums(premiumInput);
+  const payroll = monthlyPayrollTotals(months, monthlyPay, isCareInsured, kumiaiEmployeeRate, si);
 
-  // Bonus paid in two installments (June/December) — documented simplification.
-  // The health-side annual cap is tracked per calendar year (fiscal-year approx.)
-  const bonus1 = Math.floor(bonusAnnual / 2);
-  const bonus2 = bonusAnnual - bonus1;
+  // Bonus prorated by leave months (company-specific rules are out of scope),
+  // paid in two installments. The health-side annual cap is tracked per
+  // calendar year (fiscal-year approx.)
+  const leaveMonthCount = months.filter((m) => m.payFactor === 0).length;
+  const bonusPaid = Math.floor((bonusAnnualFull * (12 - leaveMonthCount)) / 12);
+  const firstInstallment = Math.floor(bonusPaid / 2);
+  const installments = [firstInstallment, bonusPaid - firstInstallment];
   let bonusTotal = 0;
   let healthBonusCumulative = 0;
-  for (const payment of [bonus1, bonus2]) {
+  for (const [i, payment] of installments.entries()) {
     if (payment <= 0) continue;
-    const input = { bonusPayment: payment, healthBonusCumulative, isCareInsured, rules: si } as const;
-    const b =
-      kumiaiEmployeeRate !== undefined
-        ? bonusPremiums({ ...input, kumiaiEmployeeRate })
-        : bonusPremiums(input);
-    bonusTotal += b.total + employmentInsurance(payment, si);
-    healthBonusCumulative += b.standardBonus;
+    const monthPlan = months[BONUS_MONTH_INDICES[i] ?? 11];
+    const isExemptMonth = monthPlan !== undefined && monthPlan.payFactor === 0 && monthPlan.siExempt;
+    if (!isExemptMonth) {
+      const input = { bonusPayment: payment, healthBonusCumulative, isCareInsured, rules: si } as const;
+      const b =
+        kumiaiEmployeeRate !== undefined
+          ? bonusPremiums({ ...input, kumiaiEmployeeRate })
+          : bonusPremiums(input);
+      bonusTotal += b.total;
+      healthBonusCumulative += b.standardBonus;
+    }
+    // 雇用保険は賃金支払いがあれば徴収される (社保免除の対象外)
+    bonusTotal += employmentInsurance(payment, si);
   }
 
-  const employmentMonthly = employmentInsurance(monthlyPay, si);
-  const socialInsurance = (monthly.total + employmentMonthly) * 12 + bonusTotal;
-
-  return { gross, monthlyPay, bonusAnnual, socialInsurance };
+  return {
+    gross: payroll.payTotal + bonusPaid,
+    monthlyPay,
+    bonusAnnual: bonusPaid,
+    socialInsurance: payroll.premiumTotal + bonusTotal
+  };
 }
 
 export function runDeterministic(
@@ -202,7 +260,14 @@ export function runDeterministic(
 
   const recurringEvents = events.filter((e): e is RecurringModifierEvent => e.type === "recurring");
   const oneTimeEvents = events.filter((e): e is OneTimeEvent => e.type === "one-time");
+  // Without rules.childbirth there is no statutory basis loaded (e.g. a
+  // Phase 1 rule file), so leave plans are ignored entirely rather than
+  // zeroing pay with no offsetting benefit.
+  const childbirthEvents = rules.childbirth
+    ? events.filter((e): e is ChildbirthEvent => e.type === "childbirth")
+    : [];
   const children = collectChildrenForEducation(household, events);
+  const parentalSiExempt = rules.childbirth?.parentalLeaveBenefit.socialInsuranceExemption ?? true;
 
   // Phase 1: investment balances stay flat; cash accumulates net cash flow.
   const initialCash = household.financialAssets
@@ -234,7 +299,8 @@ export function runDeterministic(
     for (const person of household.persons) {
       const age = ageInYear(person.birthYearMonth, year);
       ages[person.id] = age;
-      grossById.set(person.id, computePersonYear(person, age, yearsElapsed, rates, rules));
+      const months = monthlyLeavePlan(childbirthEvents, person.id, year, parentalSiExempt);
+      grossById.set(person.id, computePersonYear(person, age, yearsElapsed, rates, rules, months));
     }
 
     // 合計所得 per person (needed cross-wise for spouse deduction)
@@ -244,8 +310,27 @@ export function runDeterministic(
       totalIncomeById.set(person.id, g ? salaryIncome(g.gross, rules.incomeTax) : 0);
     }
 
-    // Step 3: benefits — Phase 2 stub
-    const benefits: { label: string; amount: Yen }[] = [];
+    // Step 3: benefits. All lines are tax-exempt (育休給付は雇用保険法12条、
+    // 出産手当金・一時金は健保法62条), so they bypass steps 4-5 and are added
+    // to household cash flow directly.
+    // Known gap: g.monthlyPay is 0 once age >= retirementAge, so a leave that
+    // spans into the retirement year silently loses its wage basis and the
+    // corresponding maternity/parental benefit for that year (leave pay is
+    // still zeroed by monthlyLeavePlan either way). Retiring mid-leave is an
+    // edge case the profile schema doesn't otherwise model.
+    const wageBasis: { [personId: string]: LeaveWageBasis } = {};
+    for (const person of household.persons) {
+      const g = grossById.get(person.id);
+      if (!g || g.monthlyPay <= 0) continue;
+      wageBasis[person.id] = {
+        monthlyPay: g.monthlyPay,
+        standardMonthly: lookupStandardMonthly(g.monthlyPay, rules.socialInsurance)
+      };
+    }
+    const benefits: BenefitLine[] = [
+      ...annualChildbirthBenefits(childbirthEvents, year, wageBasis, rules.childbirth),
+      ...annualChildBenefits(children, household.municipality, year, rules.childBenefits)
+    ];
 
     // Step 4-5: income tax and resident tax per person
     for (const person of household.persons) {
