@@ -258,5 +258,24 @@
       "confirmedOn": "2026-07-11",
       "note": "児童手当(2024年10月拡充後・こども家庭庁): 3歳未満は第1子/第2子15,000円、3歳〜高校生年代(18歳到達後最初の3月31日まで)は10,000円、第3子以降は全年齢30,000円。所得制限は撤廃。多子加算のカウントは大学生年代(22歳到達後最初の3月31日まで)の子まで。支給は偶数月(2/4/6/8/10/12月)年6回。東京都018サポートは0〜18歳(年度末まで)に月5,000円・所得制限なし(東京都福祉局 https://www.fukushi.metro.tokyo.lg.jp/kodomo/kosodate/018)。江東区バースデーサポートは1歳時にギフトカードを出生順位別(第1子6万/第2子7万/第3子以降8万)で支給(令和6年4月1日以降生まれ、江東区 https://www.city.koto.lg.jp/260501/kodomo/ninshinshussan/ninshin/97553.html)"
     }
+  },
+  "housingLoanTaxCredit": {
+    "rate": 0.007,
+    "categories": {
+      "certified-new": { "years": 13, "borrowLimitBase": 45000000, "borrowLimitWithChild": 50000000 },
+      "certified-used": { "years": 13, "borrowLimitBase": 35000000, "borrowLimitWithChild": 45000000 },
+      "zeh-new": { "years": 13, "borrowLimitBase": 35000000, "borrowLimitWithChild": 45000000 },
+      "zeh-used": { "years": 13, "borrowLimitBase": 35000000, "borrowLimitWithChild": 45000000 },
+      "energy-efficient-new": { "years": 13, "borrowLimitBase": 20000000, "borrowLimitWithChild": 30000000 },
+      "energy-efficient-used": { "years": 13, "borrowLimitBase": 20000000, "borrowLimitWithChild": 30000000 },
+      "other-used": { "years": 10, "borrowLimitBase": 20000000, "borrowLimitWithChild": 20000000 }
+    },
+    "incomeLimitForYear": 20000000,
+    "residentTaxSpillover": { "capRate": 0.05, "capAmount": 97500 },
+    "_source": {
+      "url": "https://www.mlit.go.jp/report/press/content/001975750.pdf",
+      "confirmedOn": "2026-07-20",
+      "note": "控除率0.7%(共通、国土交通省 令和8年度住宅税制改正概要 別紙1)。借入限度額・控除期間(令和8年=2026年入居時点、カッコ内は子育て世帯等=19歳未満の子を有する世帯または夫婦のいずれかが40歳未満の世帯): 長期優良住宅・低炭素住宅(certified) 新築4,500万円(5,000万円)×13年、既存3,500万円(4,500万円)×13年。ZEH水準省エネ住宅(zeh) 新築・既存とも3,500万円(4,500万円)×13年。省エネ基準適合住宅(energy-efficient) 新築・既存とも2,000万円(3,000万円)×13年(2026年入居時点。2028年以降は新築が原則対象外となる予定だが、本ルールファイルは2026年入居を前提とした単年度スナップショット)。その他住宅(other) 新築は2024年以降、省エネ基準適合の必須化により支援対象外(other-newキーは意図的に未定義)、既存のみ2,000万円×10年(子育て世帯等の上乗せなし)。【注意/レビュー時の確認事項】既存(中古)住宅のcertified/zeh/energy-efficientが新築と同じ13年・子育て世帯等上乗せありなのは従来(〜令和7年)の「中古10年・上乗せなし」という一般的な理解と乖離するが、これは令和8年度税制改正で明記された既存住宅優遇の拡充(別紙1見出し「質の高い既存住宅の借入限度額・控除期間の拡充」)であり、一次情報のPDF記載どおり(誤記ではない)。所得要件: 合計所得金額2,000万円超の年は控除停止。住民税への繰越上限は、所得税から控除しきれない額と「前年分の所得税の課税総所得金額等×5%(97,500円限度)」のいずれか小さい方(総務省、平成21年〜令和12年12月31日入居分に適用 https://www.soumu.go.jp/main_sosiki/jichi_zeisei/czaisei/czaisei_seido/090929.html)"
+    }
   }
 }

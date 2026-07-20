@@ -251,10 +251,32 @@ export interface EducationCosts {
   };
 }
 
+/**
+ * One certification x new/used cell of the 住宅ローン減税 borrow-limit table
+ * (国土交通省 令和8年度住宅税制改正概要, 別紙1). Keyed in HousingLoanTaxCreditRules
+ * by `${category}-${"new"|"used"}` (e.g. "certified-new", "zeh-used"); the
+ * "other-new" combination is intentionally absent — new-build 一般住宅 has
+ * been outside the credit since the 2024 revision (省エネ基準適合が必須化).
+ */
+export interface HousingLoanCreditCategory {
+  /** 控除期間 (年) */
+  years: number;
+  /** 借入限度額: 通常世帯 */
+  borrowLimitBase: Yen;
+  /** 借入限度額: 子育て世帯等(19歳未満の子を有する世帯 or 夫婦のいずれかが40歳未満) */
+  borrowLimitWithChild: Yen;
+}
+
 export interface HousingLoanTaxCreditRules {
   rate: Rate;
-  years: { new: number; used: number };
-  borrowLimit: { [category: string]: { base: Yen; withChild: Yen } };
+  categories: { [key: string]: HousingLoanCreditCategory };
+  /** その年の合計所得金額がこれを超えると、その年は控除が停止される */
+  incomeLimitForYear: Yen;
+  /**
+   * 所得税から控除しきれなかった額の個人住民税への繰越上限:
+   * min(繰越候補額, 課税総所得金額等 × capRate, capAmount)
+   */
+  residentTaxSpillover: { capRate: Rate; capAmount: Yen };
   _source: RuleSource;
 }
 

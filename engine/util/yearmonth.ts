@@ -42,11 +42,17 @@ export function fiscalYearEndOrdinal(birthYearMonth: YearMonth, age: number): nu
   return endYear * 12 + (3 - 1);
 }
 
-/** Number of months of `year` inside the inclusive window [from, to] */
+/**
+ * Number of months of `year` inside the inclusive window [from, to].
+ * `terminatesAt`, when given, is an EXCLUSIVE cutoff (e.g. a rent item
+ * terminated by a HousingPurchaseEvent stays active through the month
+ * before the purchase, not through the purchase month itself).
+ */
 export function monthsActiveInYear(
   year: number,
   from: YearMonth | undefined,
-  to: YearMonth | undefined
+  to: YearMonth | undefined,
+  terminatesAt?: YearMonth
 ): number {
   let first = 1;
   let last = 12;
@@ -58,7 +64,12 @@ export function monthsActiveInYear(
   if (to !== undefined) {
     const t = parseYearMonth(to);
     if (t.year < year) return 0;
-    if (t.year === year) last = t.month;
+    if (t.year === year) last = Math.min(last, t.month);
+  }
+  if (terminatesAt !== undefined) {
+    const term = parseYearMonth(terminatesAt);
+    if (term.year < year) return 0;
+    if (term.year === year) last = Math.min(last, term.month - 1);
   }
   return Math.max(0, last - first + 1);
 }

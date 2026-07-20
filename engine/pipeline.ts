@@ -1,5 +1,5 @@
 /**
- * Annual pipeline (design doc §8, Phase 1-2 scope = steps 1-6):
+ * Annual pipeline (design doc §8, Phase 1-3 scope = steps 1-7):
  *  1. income (curve interpolation x wage indexation; maternity/parental
  *     leave months replace pay with zero, short-hours factor on return)
  *  2. social insurance (standard monthly grade, bonus, employment insurance;
@@ -7,12 +7,19 @@
  *  3. benefits (childbirth lump sum, maternity allowance, parental leave
  *     benefit, child allowance, Tokyo 018, municipal) — all tax-exempt, so
  *     they enter cash flow directly and never touch steps 4-5
- *  4. income tax (salary income deduction → deductions → brackets → surtax)
- *  5. resident tax — levied on the PREVIOUS year's income
+ *  4. income tax (salary income deduction → deductions → brackets → surtax
+ *     → 住宅ローン控除, spillover into next year's resident tax)
+ *  5. resident tax — levied on the PREVIOUS year's income, less any carried
+ *     housing-credit spillover
  *  6. expenses (base items x indexation + recurring/one-time event modifiers
- *     + education cost table expansion)
- *  7-9. loans / savings / investment returns — STUB until Phase 3-4;
- *       cash balance is a simple accumulation.
+ *     + education cost table expansion + housing holding costs/purchase
+ *     cash outflow; rent items terminated by a purchase event stop here)
+ *  7. loan amortization (base-rate path, 5-year/125% rule, prepayments) —
+ *     computed BEFORE step 4 in code (ahead of its design-doc step number)
+ *     because the housing tax credit needs this year's year-end balance;
+ *     the loan math itself has no dependency on this year's tax result.
+ *  8-9. savings / investment returns — STUB until Phase 4; cash balance is
+ *       a simple accumulation net of loan payments.
  *
  * Pure function: (household, events, assumptions, rules) → SimulationResult.
  * No wall-clock, no randomness, no I/O.
@@ -24,7 +31,10 @@ import type {
   ChildbirthEvent,
   EducationPlan,
   Household,
+  HousingLoan,
+  HousingPurchaseEvent,
   LifeEvent,
+  LoanPrepaymentEvent,
   OneTimeEvent,
   Person,
   PersonIncomeRow,
@@ -33,7 +43,8 @@ import type {
   RuleSet,
   SimulationResult,
   SocialInsuranceRules,
-  Yen
+  Yen,
+  YearMonth
 } from "./types/index.js";
 import { bonusAnnualAt, indexFactor, indexationAt, monthlyBaseAt } from "./income/curve.js";
 import { annualBaseExpenses, type ExpenseLine } from "./expenses/base.js";
@@ -52,7 +63,11 @@ import {
 import { annualChildbirthBenefits, type BenefitLine, type LeaveWageBasis } from "./benefits/childbirth.js";
 import { annualChildBenefits } from "./benefits/childAllowance.js";
 import { monthlyLeavePlan, type MonthWorkPlan } from "./benefits/leave.js";
-import { ageInYear, parseYearMonth } from "./util/yearmonth.js";
+import { buildBaseRatePath } from "./housing/baseRate.js";
+import { annualHoldingCosts, annualPurchaseCashOutflow } from "./housing/holdingCosts.js";
+import { annualLoanRow, initLoanState, initialRateFor, type LoanState, type LoanYearRow } from "./housing/loan.js";
+import { applyHousingCredit, housingLoanCreditForYear } from "./housing/taxCredit.js";
+import { ageInYear, monthOrdinal, parseYearMonth } from "./util/yearmonth.js";
 
 export interface PipelineOptions {
   /** First simulated year assumes previous-year income = first-year income (kit §2-3) */
@@ -118,7 +133,14 @@ function collectChildrenForEducation(household: Household, events: LifeEvent[]):
   return [...fromHousehold, ...fromEvents];
 }
 
-/** Step 6: base expenses + recurring/one-time event modifiers + education cost table */
+/**
+ * Step 6: base expenses (rent items stop at any HousingPurchaseEvent that
+ * names them in terminatesExpenseLabels) + recurring/one-time event
+ * modifiers + education cost table + housing purchase cash outflow/holding
+ * costs. Loan repayment itself is tracked separately (step 7's housing rows),
+ * not folded into this expense list, to match the design doc's AnnualRow
+ * shape (`expenses` vs. `housing`).
+ */
 function computeExpenseLines(
   household: Household,
   year: number,
@@ -127,10 +149,12 @@ function computeExpenseLines(
   recurringEvents: RecurringModifierEvent[],
   oneTimeEvents: OneTimeEvent[],
   children: ChildEducationInput[],
-  rules: RuleSet
+  rules: RuleSet,
+  housingPurchaseEvents: HousingPurchaseEvent[],
+  rentTerminations: Map<string, YearMonth>
 ): ExpenseLine[] {
   return [
-    ...annualBaseExpenses(household.baseExpenses, year, startYear, rates),
+    ...annualBaseExpenses(household.baseExpenses, year, startYear, rates, rentTerminations),
     ...annualRecurringEvents(recurringEvents, year, startYear, rates),
     ...annualOneTimeEvents(oneTimeEvents, year),
     ...annualEducationExpenses(
@@ -140,7 +164,9 @@ function computeExpenseLines(
       rates,
       rules.educationCosts,
       rules.childBenefits?.childcareCost
-    )
+    ),
+    ...annualPurchaseCashOutflow(housingPurchaseEvents, year),
+    ...annualHoldingCosts(housingPurchaseEvents, year)
   ];
 }
 
@@ -242,6 +268,56 @@ function computePersonYear(
   };
 }
 
+interface LoanContext {
+  event: HousingPurchaseEvent;
+  loan: HousingLoan;
+  originationOrdinal: number;
+}
+
+/** Loans grouped by (purchase event, borrower) for 住宅ローン控除 (limits/years are per-purchase, balances are per-borrower's own loan) */
+interface CreditGroup {
+  event: HousingPurchaseEvent;
+  personId: string;
+  loanIds: string[];
+}
+
+function buildLoanContexts(housingPurchaseEvents: HousingPurchaseEvent[]): LoanContext[] {
+  return housingPurchaseEvents.flatMap((event) =>
+    event.loans.map((loan) => ({ event, loan, originationOrdinal: monthOrdinal(event.yearMonth) }))
+  );
+}
+
+/**
+ * Groups are keyed by whatever `borrowerPersonId` the profile declares; the
+ * engine does not validate it against household.persons (consistent with
+ * other cross-reference fields like ChildbirthEvent.leavePlans[].personId —
+ * profile data is trusted, not re-validated internally). A candidate credit
+ * for an unknown personId is simply never read back, since the step-4 tax
+ * loop only iterates household.persons.
+ *
+ * Known simplification: if the same person holds qualifying loans across
+ * TWO separate HousingPurchaseEvents, their candidate credits are summed
+ * (per-event borrowLimit/years are still respected individually), which
+ * does not model the statutory "one primary residence" restriction. The
+ * profile schema has no concept of which purchase is the current primary
+ * residence, so this is left unenforced rather than guessed at.
+ */
+function buildCreditGroups(housingPurchaseEvents: HousingPurchaseEvent[]): CreditGroup[] {
+  const groups: CreditGroup[] = [];
+  for (const event of housingPurchaseEvents) {
+    const byPerson = new Map<string, string[]>();
+    for (const loan of event.loans) {
+      const list = byPerson.get(loan.borrowerPersonId) ?? [];
+      list.push(loan.loanId);
+      byPerson.set(loan.borrowerPersonId, list);
+    }
+    for (const [personId, loanIds] of byPerson) {
+      groups.push({ event, personId, loanIds });
+    }
+  }
+  return groups;
+}
+
 export function runDeterministic(
   household: Household,
   events: LifeEvent[],
@@ -269,6 +345,26 @@ export function runDeterministic(
   const children = collectChildrenForEducation(household, events);
   const parentalSiExempt = rules.childbirth?.parentalLeaveBenefit.socialInsuranceExemption ?? true;
 
+  const housingPurchaseEvents = events.filter(
+    (e): e is HousingPurchaseEvent => e.type === "housing-purchase"
+  );
+  const prepaymentEvents = events.filter((e): e is LoanPrepaymentEvent => e.type === "loan-prepayment");
+  const loanContexts = buildLoanContexts(housingPurchaseEvents);
+  const creditGroups = buildCreditGroups(housingPurchaseEvents);
+  const rentTerminations = new Map<string, YearMonth>();
+  for (const event of housingPurchaseEvents) {
+    for (const label of event.terminatesExpenseLabels) rentTerminations.set(label, event.yearMonth);
+  }
+
+  const baseRatePath = buildBaseRatePath(assumptions.baseRate, startYear, endYear);
+  const baseRateForYear = (year: number): Rate => baseRatePath.get(year) ?? assumptions.baseRate.initial;
+
+  const loanStates = new Map<string, LoanState>();
+  for (const ctx of loanContexts) {
+    const originationYear = Math.floor(ctx.originationOrdinal / 12);
+    loanStates.set(ctx.loan.loanId, initLoanState(ctx.loan, initialRateFor(ctx.loan, baseRateForYear, originationYear)));
+  }
+
   // Phase 1: investment balances stay flat; cash accumulates net cash flow.
   const initialCash = household.financialAssets
     .filter((h) => h.account === "cash")
@@ -285,6 +381,8 @@ export function runDeterministic(
 
   let cashBalance = initialCash;
   const pendingResidentTax = new Map<string, Yen>();
+  /** 住宅ローン控除のうち所得税から引ききれず住民税へ繰り越された額 (design doc §8 手順4-5) */
+  const pendingHousingCreditSpillover = new Map<string, Yen>();
   const rows: AnnualRow[] = [];
 
   for (let year = startYear; year <= endYear; year++) {
@@ -310,6 +408,44 @@ export function runDeterministic(
       totalIncomeById.set(person.id, g ? salaryIncome(g.gross, rules.incomeTax) : 0);
     }
 
+    // Step 7 (computed here, ahead of its design-doc number — see module
+    // header): housing loan amortization. This year's year-end balance
+    // feeds the 住宅ローン控除 candidate in step 4 below.
+    const housingRows: { [loanId: string]: LoanYearRow } = {};
+    for (const ctx of loanContexts) {
+      // Loan not yet originated: omit it from this year's housing output
+      // entirely (no disbursed balance exists yet to report).
+      if (year < Math.floor(ctx.originationOrdinal / 12)) continue;
+      const state = loanStates.get(ctx.loan.loanId);
+      if (!state) continue;
+      const loanPrepayments = prepaymentEvents.filter((p) => p.loanId === ctx.loan.loanId);
+      const { state: next, row } = annualLoanRow(
+        state,
+        ctx.loan,
+        year,
+        ctx.originationOrdinal,
+        baseRateForYear,
+        loanPrepayments
+      );
+      loanStates.set(ctx.loan.loanId, next);
+      housingRows[ctx.loan.loanId] = row;
+    }
+    const housingCreditCandidateByPerson = new Map<string, Yen>();
+    for (const group of creditGroups) {
+      const balances = group.loanIds.map((id) => housingRows[id]?.balance ?? 0);
+      const candidate = housingLoanCreditForYear(
+        group.event,
+        balances,
+        year,
+        totalIncomeById.get(group.personId) ?? 0,
+        rules.housingLoanTaxCredit
+      );
+      housingCreditCandidateByPerson.set(
+        group.personId,
+        (housingCreditCandidateByPerson.get(group.personId) ?? 0) + candidate
+      );
+    }
+
     // Step 3: benefits. All lines are tax-exempt (育休給付は雇用保険法12条、
     // 出産手当金・一時金は健保法62条), so they bypass steps 4-5 and are added
     // to household cash flow directly.
@@ -333,6 +469,8 @@ export function runDeterministic(
     ];
 
     // Step 4-5: income tax and resident tax per person
+    const appliedHousingCreditByPerson = new Map<string, Yen>();
+    const newHousingSpilloverByPerson = new Map<string, Yen>();
     for (const person of household.persons) {
       const g = grossById.get(person.id);
       if (!g) continue;
@@ -360,11 +498,22 @@ export function runDeterministic(
           : { ...taxInputBase, rules: rules.residentTax }
       );
 
+      // 住宅ローン控除: 所得税から先に充当し、引ききれない額は翌年の住民税へ繰越。
+      const candidateCredit = housingCreditCandidateByPerson.get(person.id) ?? 0;
+      const credit = applyHousingCredit(
+        candidateCredit,
+        incomeTax.tax,
+        incomeTax.taxableIncome,
+        rules.housingLoanTaxCredit
+      );
+      appliedHousingCreditByPerson.set(person.id, Math.min(candidateCredit, incomeTax.tax));
+      newHousingSpilloverByPerson.set(person.id, credit.residentTaxSpillover);
+
       econ.set(person.id, {
         gross: g.gross,
         socialInsurance: g.socialInsurance,
         totalIncome,
-        incomeTax: incomeTax.tax,
+        incomeTax: credit.incomeTaxAfterCredit,
         incomeTaxMarginalRate: incomeTax.marginalRate,
         residentTaxForNextYear: residentNext.total,
         residentIncomeLevy: residentNext.incomeLevy
@@ -377,9 +526,14 @@ export function runDeterministic(
       // Resident tax levied this year = computed from previous year's income.
       // First year: optionally assume previous year had the same income.
       const carried = pendingResidentTax.get(person.id);
-      const residentTaxThisYear =
+      const residentTaxBeforeSpillover =
         carried ?? (firstYearSameIncome && year === startYear ? e.residentTaxForNextYear : 0);
       pendingResidentTax.set(person.id, e.residentTaxForNextYear);
+
+      // 前年分の住宅ローン控除で住民税へ繰り越された額をこの年の住民税から差し引く。
+      const carriedSpillover = pendingHousingCreditSpillover.get(person.id) ?? 0;
+      const residentTaxThisYear = Math.max(0, residentTaxBeforeSpillover - carriedSpillover);
+      pendingHousingCreditSpillover.set(person.id, newHousingSpilloverByPerson.get(person.id) ?? 0);
 
       const net = e.gross - e.socialInsurance - e.incomeTax - residentTaxThisYear;
       incomeRows[person.id] = {
@@ -396,7 +550,9 @@ export function runDeterministic(
       });
     }
 
-    // Step 6: expenses (base items + recurring/one-time event modifiers + education costs)
+    // Step 6: expenses (base items + recurring/one-time event modifiers +
+    // education costs + housing purchase/holding costs; rent items
+    // terminated by a purchase event are excluded via rentTerminations)
     const expenseLines = computeExpenseLines(
       household,
       year,
@@ -405,16 +561,32 @@ export function runDeterministic(
       recurringEvents,
       oneTimeEvents,
       children,
-      rules
+      rules,
+      housingPurchaseEvents,
+      rentTerminations
     );
     const totalExpenses = expenseLines.reduce((sum, l) => sum + l.amount, 0);
     const totalNet = Object.values(incomeRows).reduce((sum, r) => sum + r.net, 0);
     const totalBenefits = benefits.reduce((sum, b) => sum + b.amount, 0);
+    const totalLoanPayments = Object.values(housingRows).reduce((sum, r) => sum + r.payment, 0);
+    // Only the portion applied against THIS year's income tax — any amount
+    // that spilled over to reduce NEXT year's resident tax is not included
+    // here (it instead shows up as a lower income[personId].residentTax in
+    // that future year's row, per applyHousingCredit's spillover carry).
+    const totalHousingCreditApplied = Array.from(appliedHousingCreditByPerson.values()).reduce(
+      (sum, v) => sum + v,
+      0
+    );
 
-    // Steps 7-9 (loans / savings / returns): Phase 3-4 stubs.
-    cashBalance += totalNet + totalBenefits - totalExpenses;
+    // Step 8-9 (savings / investment returns): Phase 4 stub.
+    cashBalance += totalNet + totalBenefits - totalExpenses - totalLoanPayments;
 
     const investTotal = Object.values(investBalances).reduce((sum, v) => sum + v, 0);
+    // 住宅評価額(簡易): 購入価格で据え置き(値上がり/値下がりはモデル化しない)。
+    const housePriceIfPurchased = housingPurchaseEvents
+      .filter((e) => year >= parseYearMonth(e.yearMonth).year)
+      .reduce((sum, e) => sum + e.propertyPrice, 0);
+    const loanBalanceTotal = Object.values(housingRows).reduce((sum, r) => sum + r.balance, 0);
     const monthlyExpenses = totalExpenses / 12;
     rows.push({
       year,
@@ -422,8 +594,8 @@ export function runDeterministic(
       income: incomeRows,
       benefits,
       expenses: expenseLines.map((l) => ({ category: l.category, amount: l.amount })),
-      housing: {},
-      taxCredits: { housingLoan: 0 },
+      housing: housingRows,
+      taxCredits: { housingLoan: totalHousingCreditApplied },
       invest: {
         contributions: 0,
         withdrawals: 0,
@@ -433,7 +605,7 @@ export function runDeterministic(
         nisaAnnualUsed: { tsumitate: 0, growth: 0 }
       },
       cashBalance,
-      netWorth: cashBalance + investTotal,
+      netWorth: cashBalance + investTotal + housePriceIfPurchased - loanBalanceTotal,
       liquidityAlert: cashBalance < household.savingsPolicy.cashBufferMonths * monthlyExpenses,
       furusatoNozeiLimit: furusato
     });
