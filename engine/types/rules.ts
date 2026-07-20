@@ -298,6 +298,12 @@ export interface FurusatoNozeiRules {
   _source: RuleSource;
 }
 
+/** 上場株式等の譲渡所得等に係る申告分離課税 (所得税15% + 復興特別所得税0.315% + 住民税5%) */
+export interface CapitalGainsTaxRules {
+  rate: Rate;
+  _source: RuleSource;
+}
+
 export interface RuleSet {
   year: number;
   incomeTax: IncomeTaxRules;
@@ -310,5 +316,5 @@ export interface RuleSet {
   educationCosts?: EducationCosts;
   housingLoanTaxCredit?: HousingLoanTaxCreditRules;
   nisa?: NisaRules;
-  capitalGainsTaxRate?: Rate;
+  capitalGainsTax?: CapitalGainsTaxRules;
 }
