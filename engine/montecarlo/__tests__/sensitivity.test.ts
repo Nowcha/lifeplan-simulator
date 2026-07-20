@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import rules2026 from "../../../rules/2026.json";
 import type { Assumptions, Household, RuleSet } from "../../types/index.js";
+import { runDeterministic } from "../../pipeline.js";
 import { runSensitivity } from "../sensitivity.js";
 import { BASE_RATE_FACTOR_ID } from "../paths.js";
 
@@ -85,5 +86,21 @@ describe("runSensitivity", () => {
     const a = runSensitivity(household, [], assumptions, rules);
     const b = runSensitivity(household, [], assumptions, rules);
     expect(a).toEqual(b);
+  });
+
+  test("シフト幅は標準誤差(volatility/√年数)であり、年率volatilityをそのまま複利させない(回帰防止)", () => {
+    // 31年間、世界株式(期待5%・volatility18%)。年率volatilityをそのまま
+    // ±したら年率23%複利=最終資産が決定論パスの数十〜数百倍に達してしまう
+    // (Phase 5のUI検証で実際に発覚した不具合)。標準誤差ベースなら決定論
+    // パスの数倍程度の穏当な範囲に収まるはず。
+    const assumptions = makeAssumptions({
+      simulation: { startYear: 2026, endAge: 65, paths: 100, seed: 1 },
+      assetClasses: [{ id: "global-equity", expectedReturn: 0.05, volatility: 0.18 }]
+    });
+    const deterministicFinal = runDeterministic(household, [], assumptions, rules).deterministic.at(-1)?.netWorth ?? 0;
+    const result = runSensitivity(household, [], assumptions, rules);
+    const equity = result.find((r) => r.factor === "global-equity");
+    expect(equity).toBeDefined();
+    expect(equity?.high ?? 0).toBeLessThan(deterministicFinal * 5);
   });
 });
