@@ -18,8 +18,14 @@
  *     computed BEFORE step 4 in code (ahead of its design-doc step number)
  *     because the housing tax credit needs this year's year-end balance;
  *     the loan math itself has no dependency on this year's tax result.
- *  8-9. savings / investment returns — STUB until Phase 4; cash balance is
- *       a simple accumulation net of loan payments.
+ *  8. savings / drawdown: if cash clears the buffer (cashBufferMonths x
+ *     monthly expenses), the surplus is contributed per SavingsPolicy
+ *     .contributions in order (NISA quota-checked); if cash falls short,
+ *     the shortfall is drawn down per SavingsPolicy.drawdown.order (taxable
+ *     withdrawals incur capital gains tax; NISA quota consumed by a sale
+ *     restores the following year, per nisa.ts).
+ *  9. investment returns: this year's per-asset-class return (expected
+ *     value in the deterministic path) is applied to every holding.
  *
  * Pure function: (household, events, assumptions, rules) → SimulationResult.
  * No wall-clock, no randomness, no I/O.
@@ -68,6 +74,11 @@ import { annualHoldingCosts, annualPurchaseCashOutflow } from "./housing/holding
 import { annualLoanRow, initLoanState, initialRateFor, type LoanState, type LoanYearRow } from "./housing/loan.js";
 import { applyHousingCredit, housingLoanCreditForYear } from "./housing/taxCredit.js";
 import { ageInYear, monthOrdinal, parseYearMonth } from "./util/yearmonth.js";
+import { applyContributions } from "./invest/contributions.js";
+import { applyDrawdown } from "./invest/drawdown.js";
+import { accountTotals, initHoldings, type HoldingsState } from "./invest/holdings.js";
+import { restoreNisaQuota, type NisaState } from "./invest/nisa.js";
+import { applyAnnualReturns } from "./invest/returns.js";
 
 export interface PipelineOptions {
   /** First simulated year assumes previous-year income = first-year income (kit §2-3) */
@@ -365,19 +376,18 @@ export function runDeterministic(
     loanStates.set(ctx.loan.loanId, initLoanState(ctx.loan, initialRateFor(ctx.loan, baseRateForYear, originationYear)));
   }
 
-  // Phase 1: investment balances stay flat; cash accumulates net cash flow.
   const initialCash = household.financialAssets
     .filter((h) => h.account === "cash")
     .reduce((sum, h) => sum + h.balance, 0);
-  const investBalances: { [account: string]: Yen } = {};
-  for (const holding of household.financialAssets) {
-    if (holding.account === "cash") continue;
-    investBalances[holding.account] = (investBalances[holding.account] ?? 0) + holding.balance;
-  }
-  const nisaLifetimeUsed = household.financialAssets.reduce(
-    (sum, h) => sum + (h.nisaLifetimeUsed ?? 0),
-    0
-  );
+  let holdings: HoldingsState = initHoldings(household.financialAssets);
+  let nisaState: NisaState = {
+    lifetimeUsed: household.financialAssets.reduce((sum, h) => sum + (h.nisaLifetimeUsed ?? 0), 0),
+    growthUsed: household.financialAssets
+      .filter((h) => h.account === "nisa-growth")
+      .reduce((sum, h) => sum + (h.nisaLifetimeUsed ?? 0), 0)
+  };
+  /** NISA売却分の簿価復活は翌年に反映する(design doc §5 quotaRestoration) */
+  let pendingNisaRestoration = { tsumitate: 0, growth: 0 };
 
   let cashBalance = initialCash;
   const pendingResidentTax = new Map<string, Yen>();
@@ -386,6 +396,9 @@ export function runDeterministic(
   const rows: AnnualRow[] = [];
 
   for (let year = startYear; year <= endYear; year++) {
+    // NISA quota restored from last year's NISA sales (design doc: restoration lands the FOLLOWING year)
+    nisaState = restoreNisaQuota(nisaState, pendingNisaRestoration);
+
     const yearsElapsed = year - startYear;
     const ages: { [personId: string]: number } = {};
     const incomeRows: { [personId: string]: PersonIncomeRow } = {};
@@ -578,16 +591,56 @@ export function runDeterministic(
       0
     );
 
-    // Step 8-9 (savings / investment returns): Phase 4 stub.
     cashBalance += totalNet + totalBenefits - totalExpenses - totalLoanPayments;
+    const monthlyExpenses = totalExpenses / 12;
+    const bufferTarget = household.savingsPolicy.cashBufferMonths * monthlyExpenses;
 
+    // Step 8: contribute the surplus above the cash buffer, or draw down the
+    // shortfall below it (design doc §8 手順8). Exactly one of the two runs.
+    let contributionsTotal = 0;
+    let withdrawalsTotal = 0;
+    let capitalGainsTaxTotal = 0;
+    let nisaAnnualUsed = { tsumitate: 0, growth: 0 };
+    let soldNisaCostBasisThisYear = { tsumitate: 0, growth: 0 };
+
+    if (cashBalance >= bufferTarget) {
+      const result = applyContributions(
+        household.savingsPolicy.contributions,
+        cashBalance - bufferTarget,
+        holdings,
+        nisaState,
+        rules.nisa
+      );
+      holdings = result.holdings;
+      nisaState = result.nisaState;
+      nisaAnnualUsed = result.nisaAnnualUsed;
+      contributionsTotal = result.totalContributed;
+      cashBalance -= contributionsTotal;
+    } else {
+      const result = applyDrawdown(
+        household.savingsPolicy.drawdown.order,
+        bufferTarget - cashBalance,
+        holdings,
+        rules.capitalGainsTax
+      );
+      holdings = result.holdings;
+      withdrawalsTotal = result.totalWithdrawn;
+      capitalGainsTaxTotal = result.capitalGainsTax;
+      soldNisaCostBasisThisYear = result.soldNisaCostBasis;
+      cashBalance += result.netProceeds;
+    }
+    pendingNisaRestoration = soldNisaCostBasisThisYear;
+
+    // Step 9: apply this year's realized returns to whatever remains.
+    holdings = applyAnnualReturns(holdings, assumptions);
+
+    const investBalances = accountTotals(holdings);
     const investTotal = Object.values(investBalances).reduce((sum, v) => sum + v, 0);
     // 住宅評価額(簡易): 購入価格で据え置き(値上がり/値下がりはモデル化しない)。
     const housePriceIfPurchased = housingPurchaseEvents
       .filter((e) => year >= parseYearMonth(e.yearMonth).year)
       .reduce((sum, e) => sum + e.propertyPrice, 0);
     const loanBalanceTotal = Object.values(housingRows).reduce((sum, r) => sum + r.balance, 0);
-    const monthlyExpenses = totalExpenses / 12;
     rows.push({
       year,
       ages,
@@ -597,16 +650,16 @@ export function runDeterministic(
       housing: housingRows,
       taxCredits: { housingLoan: totalHousingCreditApplied },
       invest: {
-        contributions: 0,
-        withdrawals: 0,
-        capitalGainsTax: 0,
-        balances: { ...investBalances },
-        nisaLifetimeUsed,
-        nisaAnnualUsed: { tsumitate: 0, growth: 0 }
+        contributions: contributionsTotal,
+        withdrawals: withdrawalsTotal,
+        capitalGainsTax: capitalGainsTaxTotal,
+        balances: investBalances,
+        nisaLifetimeUsed: nisaState.lifetimeUsed,
+        nisaAnnualUsed
       },
       cashBalance,
       netWorth: cashBalance + investTotal + housePriceIfPurchased - loanBalanceTotal,
-      liquidityAlert: cashBalance < household.savingsPolicy.cashBufferMonths * monthlyExpenses,
+      liquidityAlert: cashBalance < bufferTarget,
       furusatoNozeiLimit: furusato
     });
   }

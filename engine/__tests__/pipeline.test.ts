@@ -57,14 +57,18 @@ describe("決定論パイプライン (サンプル世帯)", () => {
     }
   });
 
-  test("現金残高は毎年の収支(手取り+給付−支出)の累積になっている", () => {
+  test("現金残高は毎年の収支(手取り+給付−支出)の累積から、投資への拠出/取り崩しを差し引き・足し引きしたもの", () => {
     const first = rows[0];
     expect(first).toBeDefined();
     if (!first) return;
     const netTotal = Object.values(first.income).reduce((s, r) => s + r.net, 0);
     const benefitTotal = first.benefits.reduce((s, b) => s + b.amount, 0);
     const expenseTotal = first.expenses.reduce((s, e) => s + e.amount, 0);
-    expect(first.cashBalance).toBe(6000000 + netTotal + benefitTotal - expenseTotal);
+    const rawCashFlow = 6000000 + netTotal + benefitTotal - expenseTotal;
+    // Exactly one of contributions/withdrawals is non-zero each year (design doc §8 手順8).
+    expect(first.cashBalance).toBe(
+      rawCashFlow - first.invest.contributions + first.invest.withdrawals - first.invest.capitalGainsTax
+    );
   });
 
   test("同一入力で結果が再現する(純粋関数)", () => {
