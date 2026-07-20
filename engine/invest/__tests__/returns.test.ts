@@ -28,6 +28,11 @@ describe("returnRateFor", () => {
   test("未定義のassetClassIdは0を返す", () => {
     expect(returnRateFor("unknown-class", assumptions)).toBe(0);
   });
+
+  test("injected(モンテカルロの当年実現値)はdeterministicOverrideより優先される", () => {
+    const overridden: Assumptions = { ...assumptions, deterministicOverride: { "global-equity": 0.0 } };
+    expect(returnRateFor("global-equity", overridden, -0.1)).toBe(-0.1);
+  });
 });
 
 describe("applyAnnualReturns", () => {
@@ -39,5 +44,15 @@ describe("applyAnnualReturns", () => {
     const next = applyAnnualReturns(holdings, assumptions);
     expect(next[holdingKey("taxable", "global-equity")]?.balance).toBe(1050000);
     expect(next[holdingKey("taxable", "bonds")]?.balance).toBe(1015000);
+  });
+
+  test("injectedByAssetClassが指定されたholdingのみそちらを使う", () => {
+    const holdings = initHoldings([
+      { assetClassId: "global-equity", account: "taxable", balance: 1000000, costBasis: 800000 },
+      { assetClassId: "bonds", account: "taxable", balance: 1000000, costBasis: 1000000 }
+    ]);
+    const next = applyAnnualReturns(holdings, assumptions, { "global-equity": -0.2 });
+    expect(next[holdingKey("taxable", "global-equity")]?.balance).toBe(800000);
+    expect(next[holdingKey("taxable", "bonds")]?.balance).toBe(1015000); // 未注入なのでexpectedReturnのまま
   });
 });

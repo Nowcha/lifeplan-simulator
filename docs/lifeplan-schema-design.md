@@ -291,6 +291,8 @@ interface StochasticVar { mean: Rate; volatility: Rate; }
 
 **パス生成の仕様**: 相関行列をCholesky分解し、月次ではなく**年次**で相関乱数を生成(資産リターンは対数正規)。基準金利のみ年次値を月次に展開してローン計算に渡す。シード付きPRNGは `mulberry32` などの軽量実装で可。
 
+**Phase 4 v1 のスコープ限定(承認済み)**: `inflation`/`wageGrowth` は `StochasticVar` 型のまま残すが、Phase 4 v1では確率変動させず決定論値(mean固定)で据え置く。理由: `income/curve.ts`・`expenses/base.ts`・`expenses/education.ts` の複利計算が「年率のyearsElapsed乗」実装になっており、年次実現値を変動させるには「年次実現値の累積積」への作り直しが必要で、Phase 1-3の既存テスト資産に触れるリスクが大きいため。資産クラスのリターンと基準金利(`mean-reverting`モデルのみ)だけを確率変動させる(`engine/montecarlo/paths.ts`)。インフレ・賃金の確率化は将来のフェーズで別途対応する。
+
 ## 6. ルールファイル `rules/2026.json`(抜粋構造)
 
 エンジンは計算時点の暦年に対応するルールを参照。将来年度はデフォルトで最新年度を継続適用。**数値はプレースホルダにせず、実装時にClaude Codeで一次情報(国税庁・協会けんぽ・こども家庭庁・江東区)を確認して埋めること。**

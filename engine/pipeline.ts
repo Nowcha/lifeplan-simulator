@@ -83,6 +83,17 @@ import { applyAnnualReturns } from "./invest/returns.js";
 export interface PipelineOptions {
   /** First simulated year assumes previous-year income = first-year income (kit §2-3) */
   firstYearResidentTaxAssumesSameIncome?: boolean;
+  /**
+   * モンテカルロ試行が1本のパスを評価する際に、決定論の期待値パスの代わりに
+   * 使う実現値(generateFactorPaths由来)。未指定なら従来どおり決定論パス
+   * (期待値/deterministicOverride)を使う。
+   */
+  stochasticPaths?: {
+    /** year → rate */
+    baseRate?: Map<number, Rate>;
+    /** assetClassId → rate[], index = year - startYear */
+    assetReturns?: { [assetClassId: string]: Rate[] };
+  };
 }
 
 interface PersonYearEconomics {
@@ -367,7 +378,7 @@ export function runDeterministic(
     for (const label of event.terminatesExpenseLabels) rentTerminations.set(label, event.yearMonth);
   }
 
-  const baseRatePath = buildBaseRatePath(assumptions.baseRate, startYear, endYear);
+  const baseRatePath = options?.stochasticPaths?.baseRate ?? buildBaseRatePath(assumptions.baseRate, startYear, endYear);
   const baseRateForYear = (year: number): Rate => baseRatePath.get(year) ?? assumptions.baseRate.initial;
 
   const loanStates = new Map<string, LoanState>();
@@ -632,7 +643,15 @@ export function runDeterministic(
     pendingNisaRestoration = soldNisaCostBasisThisYear;
 
     // Step 9: apply this year's realized returns to whatever remains.
-    holdings = applyAnnualReturns(holdings, assumptions);
+    const assetReturnPaths = options?.stochasticPaths?.assetReturns;
+    const injectedReturnsThisYear = assetReturnPaths
+      ? Object.fromEntries(
+          Object.entries(assetReturnPaths)
+            .map(([assetClassId, path]) => [assetClassId, path[yearsElapsed]] as const)
+            .filter((entry): entry is [string, Rate] => entry[1] !== undefined)
+        )
+      : undefined;
+    holdings = applyAnnualReturns(holdings, assumptions, injectedReturnsThisYear);
 
     const investBalances = accountTotals(holdings);
     const investTotal = Object.values(investBalances).reduce((sum, v) => sum + v, 0);
