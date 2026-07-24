@@ -36,9 +36,9 @@
     { "label": "雑費", "monthly": 30000, "indexation": "inflation" }
   ],
   "financialAssets": [
-    { "assetClassId": "cash", "account": "cash", "balance": 6000000, "costBasis": 6000000 },
+    { "assetClassId": "現金", "account": "cash", "balance": 6000000, "costBasis": 6000000 },
     {
-      "assetClassId": "global-equity",
+      "assetClassId": "世界株式",
       "account": "nisa-tsumitate",
       "balance": 2600000,
       "costBasis": 2400000,
@@ -48,8 +48,8 @@
   "savingsPolicy": {
     "cashBufferMonths": 6,
     "contributions": [
-      { "account": "nisa-tsumitate", "monthlyCap": 100000, "assetClassId": "global-equity" },
-      { "account": "nisa-growth", "monthlyCap": 100000, "assetClassId": "global-equity" }
+      { "account": "nisa-tsumitate", "monthlyCap": 100000, "assetClassId": "世界株式" },
+      { "account": "nisa-growth", "monthlyCap": 100000, "assetClassId": "世界株式" }
     ],
     "drawdown": {
       "strategy": "fixed-amount",

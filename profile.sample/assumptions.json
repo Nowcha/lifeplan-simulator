@@ -3,12 +3,12 @@
   "inflation": { "mean": 0.015, "volatility": 0.01 },
   "wageGrowth": { "mean": 0.02, "volatility": 0.012 },
   "assetClasses": [
-    { "id": "global-equity", "expectedReturn": 0.05, "volatility": 0.18 },
-    { "id": "bonds", "expectedReturn": 0.015, "volatility": 0.05 },
-    { "id": "cash", "expectedReturn": 0.0, "volatility": 0.0 }
+    { "id": "世界株式", "expectedReturn": 0.05, "volatility": 0.18 },
+    { "id": "債券", "expectedReturn": 0.015, "volatility": 0.05 },
+    { "id": "現金", "expectedReturn": 0.0, "volatility": 0.0 }
   ],
   "correlationMatrix": {
-    "factors": ["global-equity", "bonds", "inflation", "base-rate"],
+    "factors": ["世界株式", "債券", "インフレ率", "base-rate"],
     "matrix": [
       [1.0, 0.2, 0.1, 0.15],
       [0.2, 1.0, -0.1, 0.4],

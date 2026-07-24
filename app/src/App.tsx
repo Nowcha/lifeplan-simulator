@@ -11,10 +11,10 @@ import { DataTable } from './components/DataTable'
 import { ProfileEditor } from './components/profile/ProfileEditor'
 import { ScenarioCompareView } from './components/scenarios/ScenarioCompareView'
 
+// 資産クラスの感度分析行は assumptions.assetClasses[].id(ユーザー命名、通常は日本語)を
+// そのままラベルとして使う。「基準金利」だけはエンジン側の固定ID(BASE_RATE_FACTOR_ID)
+// なので、ここで日本語ラベルに変換する。
 const FACTOR_LABELS: Record<string, string> = {
-  'global-equity': '世界株式リターン',
-  bonds: '債券リターン',
-  cash: '現金リターン',
   'base-rate': '住宅ローン基準金利',
 }
 
