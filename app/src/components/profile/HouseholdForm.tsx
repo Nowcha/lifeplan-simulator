@@ -1,0 +1,250 @@
+import { useFieldArray, type Control, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
+import type { ProfileFormValues } from '../../lib/profileStorage'
+import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
+import { AddButton, ItemCard, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
+import { PersonForm } from './PersonForm'
+import { ACCOUNT_TYPE_OPTIONS, CONTRIBUTION_ACCOUNT_OPTIONS, DRAWDOWN_ACCOUNT_OPTIONS, DRAWDOWN_STRATEGY_OPTIONS, INDEXATION_OPTIONS } from '../../lib/formOptions'
+
+interface HouseholdFormProps {
+  control: Control<ProfileFormValues>
+  register: UseFormRegister<ProfileFormValues>
+  setValue: UseFormSetValue<ProfileFormValues>
+}
+
+export function HouseholdForm({ control, register, setValue }: HouseholdFormProps) {
+  const persons = useFieldArray({ control, name: 'household.persons' })
+  const children = useFieldArray({ control, name: 'household.children' })
+  const baseExpenses = useFieldArray({ control, name: 'household.baseExpenses' })
+  const financialAssets = useFieldArray({ control, name: 'household.financialAssets' })
+  const contributions = useFieldArray({ control, name: 'household.savingsPolicy.contributions' })
+  const drawdownOrder = usePrimitiveArrayField<ProfileFormValues, (typeof DRAWDOWN_ACCOUNT_OPTIONS)[number]['value']>(
+    control,
+    'household.savingsPolicy.drawdown.order',
+    (name, value) => setValue(name, value)
+  )
+
+  return (
+    <div>
+      <Section title="基本情報">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <TextInput label="自治体(rules参照キー)" placeholder="koto-ku" {...register('household.municipality')} />
+        </div>
+      </Section>
+
+      <Section
+        title="本人・配偶者"
+        note="収入・退職年齢などを持つ人物。イベントの借入人・育休取得者としても参照される。"
+        actions={
+          <AddButton
+            label="追加"
+            onClick={() =>
+              persons.append({
+                id: `person-${persons.fields.length + 1}`,
+                birthYearMonth: '1990-01',
+                employment: { type: 'salaried', healthInsurance: 'kyokai-kenpo' },
+                incomeCurve: [{ age: 30, monthlyBase: 300000, bonusAnnual: 900000, indexation: 'wage' }],
+                retirementAge: 65,
+                deductions: {}
+              })
+            }
+          />
+        }
+      >
+        <div className="flex flex-col gap-4">
+          {persons.fields.map((field, index) => (
+            <PersonForm key={field.id} index={index} control={control} register={register} onRemove={() => persons.remove(index)} />
+          ))}
+        </div>
+      </Section>
+
+      <Section
+        title="子ども"
+        note="educationPlanRefはイベント側のeducationプランのIDと一致させる。"
+        actions={
+          <AddButton
+            label="追加"
+            onClick={() =>
+              children.append({ id: `child-${children.fields.length + 1}`, birthYearMonth: '2026-01', educationPlanRef: '' })
+            }
+          />
+        }
+      >
+        <div className="flex flex-col gap-3">
+          {children.fields.map((field, index) => (
+            <ItemCard key={field.id} title={`子ども${index + 1}`} onRemove={() => children.remove(index)}>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                <TextInput label="ID" {...register(`household.children.${index}.id`)} />
+                <TextInput label="生年月(YYYY-MM)" {...register(`household.children.${index}.birthYearMonth`)} />
+                <TextInput
+                  label="教育プランID"
+                  hint="ライフイベント側のeducationイベントIDと一致させる"
+                  {...register(`household.children.${index}.educationPlanRef`)}
+                />
+              </div>
+            </ItemCard>
+          ))}
+        </div>
+      </Section>
+
+      <Section
+        title="基本生活費"
+        note="住居費・食費など毎月固定でかかる支出。indexationで物価/賃金連動か据え置きかを指定。"
+        actions={
+          <AddButton
+            label="追加"
+            onClick={() => baseExpenses.append({ label: '新規費目', monthly: 0, indexation: 'inflation' })}
+          />
+        }
+      >
+        <div className="flex flex-col gap-3">
+          {baseExpenses.fields.map((field, index) => (
+            <ItemCard key={field.id} title={`費目${index + 1}`} onRemove={() => baseExpenses.remove(index)}>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <TextInput label="項目名" {...register(`household.baseExpenses.${index}.label`)} />
+                <NumberInput label="月額" suffix="円" {...register(`household.baseExpenses.${index}.monthly`, { valueAsNumber: true })} />
+                <SelectInput label="改定方法" options={[...INDEXATION_OPTIONS]} {...register(`household.baseExpenses.${index}.indexation`)} />
+                <TextInput
+                  label="開始年月(任意)"
+                  placeholder="2026-01"
+                  {...register(`household.baseExpenses.${index}.activeFrom`)}
+                />
+                <TextInput
+                  label="終了年月(任意)"
+                  placeholder="2035-12"
+                  {...register(`household.baseExpenses.${index}.activeTo`)}
+                />
+              </div>
+            </ItemCard>
+          ))}
+        </div>
+      </Section>
+
+      <Section
+        title="保有資産"
+        note="現在保有している金融資産の残高。costBasisは取得原価(譲渡益課税の計算に使用)。"
+        actions={
+          <AddButton
+            label="追加"
+            onClick={() =>
+              financialAssets.append({ assetClassId: 'global-equity', account: 'taxable', balance: 0, costBasis: 0 })
+            }
+          />
+        }
+      >
+        <div className="flex flex-col gap-3">
+          {financialAssets.fields.map((field, index) => (
+            <ItemCard key={field.id} title={`資産${index + 1}`} onRemove={() => financialAssets.remove(index)}>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+                <TextInput
+                  label="資産クラスID"
+                  hint="前提条件のassetClasses.idと一致させる"
+                  {...register(`household.financialAssets.${index}.assetClassId`)}
+                />
+                <SelectInput label="口座" options={[...ACCOUNT_TYPE_OPTIONS]} {...register(`household.financialAssets.${index}.account`)} />
+                <NumberInput label="残高" suffix="円" {...register(`household.financialAssets.${index}.balance`, { valueAsNumber: true })} />
+                <NumberInput label="取得原価" suffix="円" {...register(`household.financialAssets.${index}.costBasis`, { valueAsNumber: true })} />
+                <NumberInput
+                  label="NISA生涯枠消化額(任意)"
+                  suffix="円"
+                  {...register(`household.financialAssets.${index}.nisaLifetimeUsed`, { valueAsNumber: true })}
+                />
+              </div>
+            </ItemCard>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="貯蓄・取り崩し方針" note="毎月の積立配分と、取り崩し開始後の引き出しルール。">
+        <div className="flex flex-col gap-6">
+          <NumberInput
+            label="生活防衛資金"
+            suffix="か月分"
+            {...register('household.savingsPolicy.cashBufferMonths', { valueAsNumber: true })}
+          />
+
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <h5 className="text-xs tracking-wide text-ink-muted uppercase">積立配分</h5>
+              <AddButton
+                label="追加"
+                onClick={() => contributions.append({ account: 'nisa-tsumitate', monthlyCap: 0, assetClassId: 'global-equity' })}
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              {contributions.fields.map((field, index) => (
+                <ItemCard key={field.id} title={`積立${index + 1}`} onRemove={() => contributions.remove(index)}>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                    <SelectInput
+                      label="口座"
+                      options={[...CONTRIBUTION_ACCOUNT_OPTIONS]}
+                      {...register(`household.savingsPolicy.contributions.${index}.account`)}
+                    />
+                    <NumberInput
+                      label="月額上限"
+                      suffix="円"
+                      {...register(`household.savingsPolicy.contributions.${index}.monthlyCap`, { valueAsNumber: true })}
+                    />
+                    <TextInput
+                      label="資産クラスID"
+                      {...register(`household.savingsPolicy.contributions.${index}.assetClassId`)}
+                    />
+                  </div>
+                </ItemCard>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h5 className="mb-2 text-xs tracking-wide text-ink-muted uppercase">取り崩しルール</h5>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              <SelectInput
+                label="方式"
+                options={[...DRAWDOWN_STRATEGY_OPTIONS]}
+                {...register('household.savingsPolicy.drawdown.strategy')}
+              />
+              <NumberInput
+                label="金額 / 率"
+                hint="定額=円、定率=0.04など小数"
+                step="any"
+                {...register('household.savingsPolicy.drawdown.value', { valueAsNumber: true })}
+              />
+            </div>
+            <div className="mt-3">
+              <span className="text-xs text-ink-muted">取り崩し優先順(先頭から消費)</span>
+              <div className="mt-2 flex flex-col gap-2">
+                {drawdownOrder.value.map((account, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <span className="w-5 text-xs text-ink-muted">{index + 1}.</span>
+                    <select
+                      value={account}
+                      onChange={(e) =>
+                        drawdownOrder.update(index, e.target.value as (typeof DRAWDOWN_ACCOUNT_OPTIONS)[number]['value'])
+                      }
+                      className="w-full rounded-sm border border-hairline-strong bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-amber-500"
+                    >
+                      {DRAWDOWN_ACCOUNT_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => drawdownOrder.remove(index)}
+                      className="text-xs text-ink-muted hover:text-critical"
+                    >
+                      削除
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2">
+                <AddButton label="追加" onClick={() => drawdownOrder.append('taxable')} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </Section>
+    </div>
+  )
+}

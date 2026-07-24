@@ -48,8 +48,8 @@ export function computeSimulation(input: SimulationInput): SimulationBundle {
   return { deterministic, monteCarlo, sensitivity };
 }
 
-/** Web Worker上でサンプルプロフィールのシミュレーションを実行し、メインスレッドをブロックしない */
-export function runSimulationInWorker(): Promise<SimulationBundle> {
+/** Web Worker上で指定プロフィールのシミュレーションを実行し、メインスレッドをブロックしない */
+export function runSimulationInWorker(input: SimulationInput): Promise<SimulationBundle> {
   return new Promise((resolve, reject) => {
     const worker = new SimulationWorker();
 
@@ -62,6 +62,6 @@ export function runSimulationInWorker(): Promise<SimulationBundle> {
       worker.terminate();
     };
 
-    worker.postMessage(undefined);
+    worker.postMessage(input);
   });
 }
