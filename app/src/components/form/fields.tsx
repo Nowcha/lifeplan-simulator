@@ -38,6 +38,24 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
   )
 })
 
+type MonthInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'placeholder'> & {
+  label: string
+  hint?: string
+  error?: string
+}
+
+/** YearMonth("YYYY-MM")用のネイティブ月選択(カレンダーUI)。ブラウザ標準のtype="month"を使う。 */
+export const MonthInput = forwardRef<HTMLInputElement, MonthInputProps>(function MonthInput(
+  { label, hint, error, className, ...props },
+  ref
+) {
+  return (
+    <Field label={label} hint={hint} error={error}>
+      <input ref={ref} type="month" className={`${inputClass} ${className ?? ''}`} {...props} />
+    </Field>
+  )
+})
+
 type NumberInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string
   hint?: string

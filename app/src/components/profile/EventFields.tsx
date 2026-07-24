@@ -2,7 +2,7 @@ import { useFieldArray, type Control, type FieldArrayPath, type UseFormRegister,
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { eventPath } from '../../lib/formPath'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
-import { AddButton, ItemCard, NumberInput, SelectInput, TextInput } from '../form/fields'
+import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput, TextInput } from '../form/fields'
 import {
   GROUP_CREDIT_LIFE_OPTIONS,
   LOAN_METHOD_OPTIONS,
@@ -29,7 +29,7 @@ export function ChildbirthEventFields({ index, control, register }: EventFieldsP
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <TextInput label="出産予定年月" placeholder="2027-03" {...register(eventPath(index, 'expectedYearMonth'))} />
+        <MonthInput label="出産予定年月" {...register(eventPath(index, 'expectedYearMonth'))} />
         <TextInput label="子どものID" hint="household.childrenのidと一致させる" {...register(eventPath(index, 'childId'))} />
         <NumberInput label="出産費用" suffix="円" {...register(eventPath(index, 'deliveryCost'), { valueAsNumber: true })} />
       </div>
@@ -49,24 +49,20 @@ export function ChildbirthEventFields({ index, control, register }: EventFieldsP
             <ItemCard key={field.id} title={`育休プラン${planIndex + 1}`} onRemove={() => leavePlans.remove(planIndex)}>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 <TextInput label="対象者ID" {...register(eventPath(index, `leavePlans.${planIndex}.personId`))} />
-                <TextInput
+                <MonthInput
                   label="産休開始"
-                  placeholder="2027-03"
                   {...register(eventPath(index, `leavePlans.${planIndex}.maternityLeave.from`))}
                 />
-                <TextInput
+                <MonthInput
                   label="産休終了"
-                  placeholder="2027-05"
                   {...register(eventPath(index, `leavePlans.${planIndex}.maternityLeave.to`))}
                 />
-                <TextInput
+                <MonthInput
                   label="育休開始"
-                  placeholder="2027-05"
                   {...register(eventPath(index, `leavePlans.${planIndex}.parentalLeave.from`))}
                 />
-                <TextInput
+                <MonthInput
                   label="育休終了"
-                  placeholder="2028-03"
                   {...register(eventPath(index, `leavePlans.${planIndex}.parentalLeave.to`))}
                 />
                 <NumberInput
@@ -79,9 +75,8 @@ export function ChildbirthEventFields({ index, control, register }: EventFieldsP
                   step="0.01"
                   {...register(eventPath(index, `leavePlans.${planIndex}.returnToWork.shortHoursFactor`), { valueAsNumber: true })}
                 />
-                <TextInput
+                <MonthInput
                   label="時短終了年月(任意)"
-                  placeholder="2029-03"
                   {...register(eventPath(index, `leavePlans.${planIndex}.returnToWork.until`))}
                 />
               </div>
@@ -104,7 +99,7 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <TextInput label="購入年月" placeholder="2028-04" {...register(eventPath(index, 'yearMonth'))} />
+        <MonthInput label="購入年月" {...register(eventPath(index, 'yearMonth'))} />
         <NumberInput label="物件価格" suffix="円" {...register(eventPath(index, 'propertyPrice'), { valueAsNumber: true })} />
         <SelectInput label="物件種別" options={[...PROPERTY_TYPE_OPTIONS]} {...register(eventPath(index, 'propertyType'))} />
         <NumberInput label="頭金" suffix="円" {...register(eventPath(index, 'downPayment'), { valueAsNumber: true })} />
@@ -253,7 +248,7 @@ export function LoanPrepaymentEventFields({ index, register }: EventFieldsProps)
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       <TextInput label="対象ローンID" {...register(eventPath(index, 'loanId'))} />
-      <TextInput label="実行年月" placeholder="2032-06" {...register(eventPath(index, 'yearMonth'))} />
+      <MonthInput label="実行年月" {...register(eventPath(index, 'yearMonth'))} />
       <NumberInput label="繰上返済額" suffix="円" {...register(eventPath(index, 'amount'), { valueAsNumber: true })} />
       <SelectInput label="方式" options={[...PREPAYMENT_METHOD_OPTIONS]} {...register(eventPath(index, 'method'))} />
     </div>
@@ -312,7 +307,7 @@ export function RecurringModifierEventFields({ index, register }: EventFieldsPro
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
       <TextInput label="項目名" {...register(eventPath(index, 'label'))} />
-      <TextInput label="開始年月" placeholder="2026-06" {...register(eventPath(index, 'startYearMonth'))} />
+      <MonthInput label="開始年月" {...register(eventPath(index, 'startYearMonth'))} />
       <NumberInput label="間隔(任意)" suffix="年" {...register(eventPath(index, 'intervalYears'), { valueAsNumber: true })} />
       <NumberInput label="金額" suffix="円" {...register(eventPath(index, 'amount'), { valueAsNumber: true })} />
       <NumberInput label="発生回数(任意)" hint="空欄=期間中ずっと" {...register(eventPath(index, 'occurrences'), { valueAsNumber: true })} />
@@ -333,7 +328,7 @@ export function OneTimeEventFields({ index, register }: EventFieldsProps) {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
       <TextInput label="項目名" {...register(eventPath(index, 'label'))} />
-      <TextInput label="発生年月" placeholder="2030-01" {...register(eventPath(index, 'yearMonth'))} />
+      <MonthInput label="発生年月" {...register(eventPath(index, 'yearMonth'))} />
       <NumberInput label="金額" suffix="円" hint="正=支出、負=収入(贈与等)" {...register(eventPath(index, 'amount'), { valueAsNumber: true })} />
     </div>
   )

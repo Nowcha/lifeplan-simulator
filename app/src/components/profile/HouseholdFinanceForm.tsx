@@ -1,7 +1,7 @@
 import { useFieldArray, type Control, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
-import { AddButton, ItemCard, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
+import { AddButton, ItemCard, MonthInput, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
 import { ACCOUNT_TYPE_OPTIONS, CONTRIBUTION_ACCOUNT_OPTIONS, DRAWDOWN_ACCOUNT_OPTIONS, DRAWDOWN_STRATEGY_OPTIONS, INDEXATION_OPTIONS } from '../../lib/formOptions'
 
 interface HouseholdFinanceFormProps {
@@ -39,14 +39,12 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
                 <TextInput label="項目名" {...register(`household.baseExpenses.${index}.label`)} />
                 <NumberInput label="月額" suffix="円" {...register(`household.baseExpenses.${index}.monthly`, { valueAsNumber: true })} />
                 <SelectInput label="改定方法" options={[...INDEXATION_OPTIONS]} {...register(`household.baseExpenses.${index}.indexation`)} />
-                <TextInput
+                <MonthInput
                   label="開始年月(任意)"
-                  placeholder="2026-01"
                   {...register(`household.baseExpenses.${index}.activeFrom`)}
                 />
-                <TextInput
+                <MonthInput
                   label="終了年月(任意)"
-                  placeholder="2035-12"
                   {...register(`household.baseExpenses.${index}.activeTo`)}
                 />
               </div>

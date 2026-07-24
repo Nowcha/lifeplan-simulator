@@ -1,6 +1,6 @@
 import { useFieldArray, type Control, type UseFormRegister } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
-import { AddButton, ItemCard, Section, TextInput } from '../form/fields'
+import { AddButton, ItemCard, MonthInput, Section, TextInput } from '../form/fields'
 import { PersonForm } from './PersonForm'
 
 interface HouseholdBasicsFormProps {
@@ -63,7 +63,7 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
             <ItemCard key={field.id} title={`子ども${index + 1}`} onRemove={() => children.remove(index)}>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 <TextInput label="ID" {...register(`household.children.${index}.id`)} />
-                <TextInput label="生年月(YYYY-MM)" {...register(`household.children.${index}.birthYearMonth`)} />
+                <MonthInput label="生年月" {...register(`household.children.${index}.birthYearMonth`)} />
                 <TextInput
                   label="教育プランID"
                   hint="ライフイベント側のeducationイベントIDと一致させる"
