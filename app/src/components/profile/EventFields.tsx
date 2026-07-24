@@ -1,6 +1,16 @@
-import { useFieldArray, type Control, type FieldArrayPath, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
+import { useFieldArray, useWatch, type Control, type FieldArrayPath, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { eventPath } from '../../lib/formPath'
+import { rules } from '../../lib/engine'
+import {
+  nurseryCostHint,
+  schoolStageCostHint,
+  universityCostHint,
+  type NurseryValue,
+  type SchoolValue,
+  type UniversityHousingValue,
+  type UniversityValue
+} from '../../lib/educationCost'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput, TextInput } from '../form/fields'
 import { ChildPicker, LoanPicker, PersonPicker } from './pickers'
@@ -295,6 +305,13 @@ export function EducationPlanFields({ index, control, register }: EventFieldsPro
     name: eventPath(index, 'extracurricularMonthly') as FieldArrayPath<ProfileFormValues>
   })
 
+  const nursery = useWatch({ control, name: eventPath(index, 'stages.nursery') }) as NurseryValue
+  const elementary = useWatch({ control, name: eventPath(index, 'stages.elementary') }) as SchoolValue
+  const juniorHigh = useWatch({ control, name: eventPath(index, 'stages.juniorHigh') }) as SchoolValue
+  const highSchool = useWatch({ control, name: eventPath(index, 'stages.highSchool') }) as SchoolValue
+  const university = useWatch({ control, name: eventPath(index, 'stages.university') }) as UniversityValue
+  const universityHousing = useWatch({ control, name: eventPath(index, 'stages.universityHousing') }) as UniversityHousingValue
+
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -302,30 +319,35 @@ export function EducationPlanFields({ index, control, register }: EventFieldsPro
         <SelectInput
           label="未就学(保育・幼稚園)"
           help={NURSERY_HELP}
+          hint={nurseryCostHint(rules, nursery)}
           options={[...NURSERY_OPTIONS]}
           {...register(eventPath(index, 'stages.nursery'))}
         />
         <SelectInput
           label="小学校"
           help={SCHOOL_TYPE_HELP}
+          hint={schoolStageCostHint(rules, 'elementary', elementary)}
           options={[...SCHOOL_TYPE_OPTIONS]}
           {...register(eventPath(index, 'stages.elementary'))}
         />
         <SelectInput
           label="中学校"
           help={SCHOOL_TYPE_HELP}
+          hint={schoolStageCostHint(rules, 'juniorHigh', juniorHigh)}
           options={[...SCHOOL_TYPE_OPTIONS]}
           {...register(eventPath(index, 'stages.juniorHigh'))}
         />
         <SelectInput
           label="高校"
           help={SCHOOL_TYPE_HELP}
+          hint={schoolStageCostHint(rules, 'highSchool', highSchool)}
           options={[...SCHOOL_TYPE_OPTIONS]}
           {...register(eventPath(index, 'stages.highSchool'))}
         />
         <SelectInput
           label="大学"
           help={UNIVERSITY_HELP}
+          hint={universityCostHint(rules, university, universityHousing)}
           options={[...UNIVERSITY_OPTIONS]}
           {...register(eventPath(index, 'stages.university'))}
         />
