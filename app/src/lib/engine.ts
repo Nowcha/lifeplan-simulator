@@ -4,7 +4,7 @@
  * を直接importする — 他のUIコードは本ファイル経由でのみ結果を得る。
  */
 
-import type { Household, LifeEvent, Assumptions, RuleSet, SimulationResult } from "../../../engine/types/index.js";
+import type { Household, LifeEvent, Assumptions, EducationCosts, RuleSet, SimulationResult } from "../../../engine/types/index.js";
 import { runDeterministic } from "../../../engine/pipeline.js";
 import { runMonteCarlo } from "../../../engine/montecarlo/run.js";
 import { runSensitivity, type SensitivityFactor } from "../../../engine/montecarlo/sensitivity.js";
@@ -13,13 +13,21 @@ import sampleHousehold from "../../../profile.sample/household.json";
 import sampleEvents from "../../../profile.sample/events.json";
 import sampleAssumptions from "../../../profile.sample/assumptions.json";
 import rules2026 from "../../../rules/2026.json";
+import educationCosts from "../../../rules/education-costs.json";
 
 import SimulationWorker from "./simulation.worker.ts?worker";
 
 export const household = sampleHousehold as unknown as Household;
 export const events = sampleEvents as unknown as LifeEvent[];
 export const assumptions = sampleAssumptions as unknown as Assumptions;
-export const rules = rules2026 as unknown as RuleSet;
+/**
+ * rules/education-costs.json(文科省統計ベース、年次非依存)は rules/<year>.json とは
+ * 別ファイルなので、ここでRuleSetにマージする(scripts/demo.tsと同じ方式)。
+ */
+export const rules: RuleSet = {
+  ...(rules2026 as unknown as RuleSet),
+  educationCosts: educationCosts as unknown as EducationCosts
+};
 
 export interface SimulationBundle {
   deterministic: SimulationResult;
