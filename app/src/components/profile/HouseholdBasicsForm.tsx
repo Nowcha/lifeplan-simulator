@@ -2,6 +2,7 @@ import { useFieldArray, type Control, type UseFormRegister } from 'react-hook-fo
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { AddButton, ItemCard, MonthInput, Section, TextInput } from '../form/fields'
 import { PersonForm } from './PersonForm'
+import { EducationEventPicker } from './pickers'
 
 interface HouseholdBasicsFormProps {
   control: Control<ProfileFormValues>
@@ -48,7 +49,7 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
 
       <Section
         title="子ども"
-        note="educationPlanRefはイベント側のeducationプランのIDと一致させる。"
+        note="教育プランは「ライフイベント」タブで作成したものから選ぶ。"
         actions={
           <AddButton
             label="追加"
@@ -62,11 +63,12 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
           {children.fields.map((field, index) => (
             <ItemCard key={field.id} title={`子ども${index + 1}`} onRemove={() => children.remove(index)}>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                <TextInput label="ID" {...register(`household.children.${index}.id`)} />
+                <TextInput label="ID" hint="通常は変更不要(他の項目からは選択式で参照される)" {...register(`household.children.${index}.id`)} />
                 <MonthInput label="生年月" {...register(`household.children.${index}.birthYearMonth`)} />
-                <TextInput
-                  label="教育プランID"
-                  hint="ライフイベント側のeducationイベントIDと一致させる"
+                <EducationEventPicker
+                  control={control}
+                  label="教育プラン"
+                  hint="ライフイベントタブで作成した教育プランから選ぶ"
                   {...register(`household.children.${index}.educationPlanRef`)}
                 />
               </div>

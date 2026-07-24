@@ -17,7 +17,7 @@ export function PersonForm({ index, control, register, onRemove }: PersonFormPro
   return (
     <ItemCard title={`本人${index + 1}`} onRemove={onRemove}>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <TextInput label="ID" hint="イベントから参照されるID(変更注意)" {...register(`${path}.id`)} />
+        <TextInput label="ID" hint="通常は変更不要(他の項目からは選択式で参照される)" {...register(`${path}.id`)} />
         <MonthInput label="生年月" {...register(`${path}.birthYearMonth`)} />
         <NumberInput label="退職年齢" suffix="歳" {...register(`${path}.retirementAge`, { valueAsNumber: true })} />
         <SelectInput label="就業形態" options={[...EMPLOYMENT_TYPE_OPTIONS]} {...register(`${path}.employment.type`)} />

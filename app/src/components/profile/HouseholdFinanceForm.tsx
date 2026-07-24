@@ -2,6 +2,7 @@ import { useFieldArray, type Control, type UseFormRegister, type UseFormSetValue
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, ItemCard, MonthInput, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
+import { AssetClassPicker } from './pickers'
 import { ACCOUNT_TYPE_OPTIONS, CONTRIBUTION_ACCOUNT_OPTIONS, DRAWDOWN_ACCOUNT_OPTIONS, DRAWDOWN_STRATEGY_OPTIONS, INDEXATION_HELP, INDEXATION_OPTIONS } from '../../lib/formOptions'
 
 interface HouseholdFinanceFormProps {
@@ -24,7 +25,7 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
     <div>
       <Section
         title="基本生活費"
-        note="住居費・食費など毎月固定でかかる支出。indexationで物価/賃金連動か据え置きかを指定。"
+        note="住居費・食費など毎月固定でかかる支出。「改定方法」で物価/賃金連動か据え置きかを指定。"
         actions={
           <AddButton
             label="追加"
@@ -74,9 +75,10 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
           {financialAssets.fields.map((field, index) => (
             <ItemCard key={field.id} title={`資産${index + 1}`} onRemove={() => financialAssets.remove(index)}>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-                <TextInput
-                  label="資産クラスID"
-                  hint="前提条件のassetClasses.idと一致させる"
+                <AssetClassPicker
+                  control={control}
+                  label="資産クラス"
+                  hint="前提条件タブで定義したものから選ぶ"
                   {...register(`household.financialAssets.${index}.assetClassId`)}
                 />
                 <SelectInput label="口座" options={[...ACCOUNT_TYPE_OPTIONS]} {...register(`household.financialAssets.${index}.account`)} />
@@ -123,8 +125,9 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
                       suffix="円"
                       {...register(`household.savingsPolicy.contributions.${index}.monthlyCap`, { valueAsNumber: true })}
                     />
-                    <TextInput
-                      label="資産クラスID"
+                    <AssetClassPicker
+                      control={control}
+                      label="資産クラス"
                       {...register(`household.savingsPolicy.contributions.${index}.assetClassId`)}
                     />
                   </div>

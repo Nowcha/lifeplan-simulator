@@ -3,6 +3,7 @@ import type { ProfileFormValues } from '../../lib/profileStorage'
 import { eventPath } from '../../lib/formPath'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput, TextInput } from '../form/fields'
+import { ChildPicker, LoanPicker, PersonPicker } from './pickers'
 import {
   GROUP_CREDIT_LIFE_OPTIONS,
   INDEXATION_HELP,
@@ -32,7 +33,7 @@ export function ChildbirthEventFields({ index, control, register }: EventFieldsP
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <MonthInput label="出産予定年月" {...register(eventPath(index, 'expectedYearMonth'))} />
-        <TextInput label="子どものID" hint="household.childrenのidと一致させる" {...register(eventPath(index, 'childId'))} />
+        <ChildPicker control={control} label="対象の子ども" {...register(eventPath(index, 'childId'))} />
         <NumberInput label="出産費用" suffix="円" {...register(eventPath(index, 'deliveryCost'), { valueAsNumber: true })} />
       </div>
 
@@ -50,7 +51,7 @@ export function ChildbirthEventFields({ index, control, register }: EventFieldsP
           {leavePlans.fields.map((field, planIndex) => (
             <ItemCard key={field.id} title={`育休プラン${planIndex + 1}`} onRemove={() => leavePlans.remove(planIndex)}>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                <TextInput label="対象者ID" {...register(eventPath(index, `leavePlans.${planIndex}.personId`))} />
+                <PersonPicker control={control} label="対象者" {...register(eventPath(index, `leavePlans.${planIndex}.personId`))} />
                 <MonthInput
                   label="産休開始"
                   {...register(eventPath(index, `leavePlans.${planIndex}.maternityLeave.from`))}
@@ -189,8 +190,8 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
           {loans.fields.map((field, loanIndex) => (
             <ItemCard key={field.id} title={`ローン${loanIndex + 1}`} onRemove={() => loans.remove(loanIndex)}>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                <TextInput label="ローンID" {...register(eventPath(index, `loans.${loanIndex}.loanId`))} />
-                <TextInput label="借入人ID" {...register(eventPath(index, `loans.${loanIndex}.borrowerPersonId`))} />
+                <TextInput label="ローンID" hint="繰上返済イベントから選択される識別子" {...register(eventPath(index, `loans.${loanIndex}.loanId`))} />
+                <PersonPicker control={control} label="借入人" {...register(eventPath(index, `loans.${loanIndex}.borrowerPersonId`))} />
                 <NumberInput label="借入額" suffix="円" {...register(eventPath(index, `loans.${loanIndex}.principal`), { valueAsNumber: true })} />
                 <NumberInput label="返済期間" suffix="年" {...register(eventPath(index, `loans.${loanIndex}.years`), { valueAsNumber: true })} />
                 <SelectInput label="返済方法" options={[...LOAN_METHOD_OPTIONS]} {...register(eventPath(index, `loans.${loanIndex}.method`))} />
@@ -246,10 +247,10 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
   )
 }
 
-export function LoanPrepaymentEventFields({ index, register }: EventFieldsProps) {
+export function LoanPrepaymentEventFields({ index, control, register }: EventFieldsProps) {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-      <TextInput label="対象ローンID" {...register(eventPath(index, 'loanId'))} />
+      <LoanPicker control={control} label="対象ローン" {...register(eventPath(index, 'loanId'))} />
       <MonthInput label="実行年月" {...register(eventPath(index, 'yearMonth'))} />
       <NumberInput label="繰上返済額" suffix="円" {...register(eventPath(index, 'amount'), { valueAsNumber: true })} />
       <SelectInput label="方式" options={[...PREPAYMENT_METHOD_OPTIONS]} {...register(eventPath(index, 'method'))} />
@@ -266,7 +267,7 @@ export function EducationPlanFields({ index, control, register }: EventFieldsPro
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <TextInput label="対象の子どもID" {...register(eventPath(index, 'childId'))} />
+        <ChildPicker control={control} label="対象の子ども" {...register(eventPath(index, 'childId'))} />
         <SelectInput label="未就学(保育・幼稚園)" options={[...NURSERY_OPTIONS]} {...register(eventPath(index, 'stages.nursery'))} />
         <SelectInput label="小学校" options={[...SCHOOL_TYPE_OPTIONS]} {...register(eventPath(index, 'stages.elementary'))} />
         <SelectInput label="中学校" options={[...SCHOOL_TYPE_OPTIONS]} {...register(eventPath(index, 'stages.juniorHigh'))} />
