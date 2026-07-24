@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import type { EditableProfile } from '../../lib/profileStorage'
+import { sanitizeFormValue } from '../../lib/sanitizeFormValue'
+import { saveScenario } from '../../lib/scenarioStorage'
 import { HouseholdForm } from './HouseholdForm'
 import { EventsForm } from './EventsForm'
 import { AssumptionsForm } from './AssumptionsForm'
@@ -8,10 +11,22 @@ interface ProfileEditorProps {
   initialProfile: EditableProfile
   onApply: (profile: EditableProfile) => void
   onReset: () => void
+  onScenarioSaved: (name: string) => void
 }
 
-export function ProfileEditor({ initialProfile, onApply, onReset }: ProfileEditorProps) {
-  const { control, register, setValue, handleSubmit } = useForm<EditableProfile>({ defaultValues: initialProfile })
+export function ProfileEditor({ initialProfile, onApply, onReset, onScenarioSaved }: ProfileEditorProps) {
+  const { control, register, setValue, handleSubmit, getValues } = useForm<EditableProfile>({
+    defaultValues: initialProfile
+  })
+  const [scenarioName, setScenarioName] = useState('')
+
+  function handleSaveScenario(): void {
+    const name = scenarioName.trim()
+    if (!name) return
+    saveScenario(name, sanitizeFormValue(getValues()))
+    setScenarioName('')
+    onScenarioSaved(name)
+  }
 
   return (
     <form onSubmit={handleSubmit(onApply)}>
@@ -19,7 +34,7 @@ export function ProfileEditor({ initialProfile, onApply, onReset }: ProfileEdito
       <EventsForm control={control} register={register} setValue={setValue} />
       <AssumptionsForm control={control} register={register} setValue={setValue} />
 
-      <div className="sticky bottom-0 mt-8 flex items-center gap-4 border-t border-hairline bg-page py-4">
+      <div className="sticky bottom-0 mt-8 flex flex-wrap items-center gap-4 border-t border-hairline bg-page py-4">
         <button type="submit" className="rounded-sm bg-amber-500 px-5 py-2 text-sm font-medium text-white hover:bg-amber-700">
           保存して再計算
         </button>
@@ -30,6 +45,22 @@ export function ProfileEditor({ initialProfile, onApply, onReset }: ProfileEdito
         >
           サンプルに戻す
         </button>
+        <div className="ml-auto flex items-center gap-2">
+          <input
+            value={scenarioName}
+            onChange={(e) => setScenarioName(e.target.value)}
+            placeholder="シナリオ名(例: 転職した場合)"
+            className="rounded-sm border border-hairline-strong bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-amber-500"
+          />
+          <button
+            type="button"
+            onClick={handleSaveScenario}
+            disabled={!scenarioName.trim()}
+            className="rounded-sm border border-hairline-strong px-4 py-2 text-sm text-ink-secondary hover:border-amber-500 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            シナリオとして保存
+          </button>
+        </div>
       </div>
     </form>
   )

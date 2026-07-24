@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import { rules, runSimulationInWorker, type SimulationBundle } from './lib/engine'
 import { loadProfile, saveProfile, resetProfile, type EditableProfile } from './lib/profileStorage'
 import { sanitizeFormValue } from './lib/sanitizeFormValue'
+import { listScenarios, type Scenario } from './lib/scenarioStorage'
 import { formatManYen, formatPercent } from './lib/format'
 import { StatTile } from './components/StatTile'
 import { FanChart, type FanChartSeries } from './components/charts/FanChart'
 import { TornadoChart } from './components/charts/TornadoChart'
 import { DataTable } from './components/DataTable'
 import { ProfileEditor } from './components/profile/ProfileEditor'
+import { ScenarioCompareView } from './components/scenarios/ScenarioCompareView'
 
 const FACTOR_LABELS: Record<string, string> = {
   'global-equity': '世界株式リターン',
@@ -25,7 +27,7 @@ function buildFanChartSeries(result: SimulationBundle): FanChartSeries {
   return { years, percentiles, deterministic }
 }
 
-type View = 'dashboard' | 'editor'
+type View = 'dashboard' | 'editor' | 'compare'
 
 export default function App() {
   const [profile, setProfile] = useState<EditableProfile>(() => loadProfile())
@@ -33,6 +35,7 @@ export default function App() {
   const [view, setView] = useState<View>('dashboard')
   const [result, setResult] = useState<SimulationBundle | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [scenarios, setScenarios] = useState<Scenario[]>(() => listScenarios())
 
   useEffect(() => {
     let cancelled = false
@@ -68,6 +71,10 @@ export default function App() {
     setEditorKey((k) => k + 1)
   }
 
+  function refreshScenarios(): void {
+    setScenarios(listScenarios())
+  }
+
   return (
     <div className="min-h-screen bg-page pb-24">
       <header className="border-b border-hairline bg-surface">
@@ -80,6 +87,7 @@ export default function App() {
             <nav className="flex gap-2">
               <TabButton active={view === 'dashboard'} onClick={() => setView('dashboard')} label="ダッシュボード" />
               <TabButton active={view === 'editor'} onClick={() => setView('editor')} label="データ編集" />
+              <TabButton active={view === 'compare'} onClick={() => setView('compare')} label="シナリオ比較" />
             </nav>
           </div>
           {view === 'dashboard' && result && (
@@ -89,13 +97,19 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-5xl px-6">
-        {view === 'editor' ? (
+        {view === 'editor' && (
           <div className="py-8">
-            <ProfileEditor key={editorKey} initialProfile={profile} onApply={handleApply} onReset={handleReset} />
+            <ProfileEditor
+              key={editorKey}
+              initialProfile={profile}
+              onApply={handleApply}
+              onReset={handleReset}
+              onScenarioSaved={refreshScenarios}
+            />
           </div>
-        ) : (
-          <DashboardView result={result} error={error} />
         )}
+        {view === 'compare' && <ScenarioCompareView scenarios={scenarios} onScenariosChanged={refreshScenarios} />}
+        {view === 'dashboard' && <DashboardView result={result} error={error} />}
       </main>
     </div>
   )
