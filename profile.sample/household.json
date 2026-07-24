@@ -6,10 +6,7 @@
       "birthYearMonth": "1991-04",
       "employment": { "type": "salaried", "healthInsurance": "kyokai-kenpo" },
       "incomeCurve": [
-        { "age": 35, "monthlyBase": 380000, "bonusAnnual": 1440000, "indexation": "wage" },
-        { "age": 45, "monthlyBase": 460000, "bonusAnnual": 1800000, "indexation": "wage" },
-        { "age": 55, "monthlyBase": 500000, "bonusAnnual": 2000000, "indexation": "wage" },
-        { "age": 60, "monthlyBase": 400000, "bonusAnnual": 1200000, "indexation": "wage" }
+        { "age": 35, "monthlyBase": 380000, "bonusAnnual": 1440000, "indexation": "wage" }
       ],
       "retirementAge": 65,
       "deductions": {}
@@ -19,9 +16,7 @@
       "birthYearMonth": "1993-08",
       "employment": { "type": "salaried", "healthInsurance": "kyokai-kenpo" },
       "incomeCurve": [
-        { "age": 33, "monthlyBase": 290000, "bonusAnnual": 870000, "indexation": "wage" },
-        { "age": 45, "monthlyBase": 350000, "bonusAnnual": 1050000, "indexation": "wage" },
-        { "age": 60, "monthlyBase": 300000, "bonusAnnual": 600000, "indexation": "wage" }
+        { "age": 33, "monthlyBase": 290000, "bonusAnnual": 870000, "indexation": "wage" }
       ],
       "retirementAge": 65,
       "deductions": {}
