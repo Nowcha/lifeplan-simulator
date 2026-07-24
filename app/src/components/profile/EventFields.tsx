@@ -5,16 +5,26 @@ import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput, TextInput } from '../form/fields'
 import { ChildPicker, LoanPicker, PersonPicker } from './pickers'
 import {
+  GROUP_CREDIT_LIFE_HELP,
   GROUP_CREDIT_LIFE_OPTIONS,
   INDEXATION_HELP,
   INDEXATION_OPTIONS,
+  LOAN_METHOD_HELP,
   LOAN_METHOD_OPTIONS,
+  NURSERY_HELP,
   NURSERY_OPTIONS,
+  PREPAYMENT_METHOD_HELP,
   PREPAYMENT_METHOD_OPTIONS,
+  PROPERTY_TYPE_HELP,
   PROPERTY_TYPE_OPTIONS,
+  RATE_TYPE_HELP,
   RATE_TYPE_OPTIONS,
+  SCHOOL_TYPE_HELP,
   SCHOOL_TYPE_OPTIONS,
+  TAX_CREDIT_CATEGORY_HELP,
   TAX_CREDIT_CATEGORY_OPTIONS,
+  UNIVERSITY_HELP,
+  UNIVERSITY_HOUSING_HELP,
   UNIVERSITY_HOUSING_OPTIONS,
   UNIVERSITY_OPTIONS
 } from '../../lib/formOptions'
@@ -104,7 +114,12 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <MonthInput label="購入年月" {...register(eventPath(index, 'yearMonth'))} />
         <NumberInput label="物件価格" suffix="円" {...register(eventPath(index, 'propertyPrice'), { valueAsNumber: true })} />
-        <SelectInput label="物件種別" options={[...PROPERTY_TYPE_OPTIONS]} {...register(eventPath(index, 'propertyType'))} />
+        <SelectInput
+          label="物件種別"
+          help={PROPERTY_TYPE_HELP}
+          options={[...PROPERTY_TYPE_OPTIONS]}
+          {...register(eventPath(index, 'propertyType'))}
+        />
         <NumberInput label="頭金" suffix="円" {...register(eventPath(index, 'downPayment'), { valueAsNumber: true })} />
         <NumberInput label="諸費用" suffix="円" {...register(eventPath(index, 'closingCosts'), { valueAsNumber: true })} />
         <NumberInput
@@ -131,6 +146,7 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
         </label>
         <SelectInput
           label="控除カテゴリ"
+          help={TAX_CREDIT_CATEGORY_HELP}
           options={[...TAX_CREDIT_CATEGORY_OPTIONS]}
           {...register(eventPath(index, 'taxCreditEligibility.category'))}
         />
@@ -173,7 +189,7 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
             label="追加"
             onClick={() =>
               loans.append({
-                loanId: `loan-${loans.fields.length + 1}`,
+                loanId: `loan-${Date.now()}`,
                 borrowerPersonId: '',
                 principal: 0,
                 years: 35,
@@ -190,12 +206,21 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
           {loans.fields.map((field, loanIndex) => (
             <ItemCard key={field.id} title={`ローン${loanIndex + 1}`} onRemove={() => loans.remove(loanIndex)}>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                <TextInput label="ローンID" hint="繰上返済イベントから選択される識別子" {...register(eventPath(index, `loans.${loanIndex}.loanId`))} />
                 <PersonPicker control={control} label="借入人" {...register(eventPath(index, `loans.${loanIndex}.borrowerPersonId`))} />
                 <NumberInput label="借入額" suffix="円" {...register(eventPath(index, `loans.${loanIndex}.principal`), { valueAsNumber: true })} />
                 <NumberInput label="返済期間" suffix="年" {...register(eventPath(index, `loans.${loanIndex}.years`), { valueAsNumber: true })} />
-                <SelectInput label="返済方法" options={[...LOAN_METHOD_OPTIONS]} {...register(eventPath(index, `loans.${loanIndex}.method`))} />
-                <SelectInput label="金利タイプ" options={[...RATE_TYPE_OPTIONS]} {...register(eventPath(index, `loans.${loanIndex}.rateType`))} />
+                <SelectInput
+                  label="返済方法"
+                  help={LOAN_METHOD_HELP}
+                  options={[...LOAN_METHOD_OPTIONS]}
+                  {...register(eventPath(index, `loans.${loanIndex}.method`))}
+                />
+                <SelectInput
+                  label="金利タイプ"
+                  help={RATE_TYPE_HELP}
+                  options={[...RATE_TYPE_OPTIONS]}
+                  {...register(eventPath(index, `loans.${loanIndex}.rateType`))}
+                />
                 <NumberInput
                   label="基準金利からの優遇幅(任意)"
                   hint="変動金利のとき使用。マイナス値=優遇"
@@ -214,6 +239,7 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
                 />
                 <SelectInput
                   label="団体信用生命保険"
+                  help={GROUP_CREDIT_LIFE_HELP}
                   options={[...GROUP_CREDIT_LIFE_OPTIONS]}
                   {...register(eventPath(index, `loans.${loanIndex}.groupCreditLife`))}
                 />
@@ -253,7 +279,12 @@ export function LoanPrepaymentEventFields({ index, control, register }: EventFie
       <LoanPicker control={control} label="対象ローン" {...register(eventPath(index, 'loanId'))} />
       <MonthInput label="実行年月" {...register(eventPath(index, 'yearMonth'))} />
       <NumberInput label="繰上返済額" suffix="円" {...register(eventPath(index, 'amount'), { valueAsNumber: true })} />
-      <SelectInput label="方式" options={[...PREPAYMENT_METHOD_OPTIONS]} {...register(eventPath(index, 'method'))} />
+      <SelectInput
+        label="方式"
+        help={PREPAYMENT_METHOD_HELP}
+        options={[...PREPAYMENT_METHOD_OPTIONS]}
+        {...register(eventPath(index, 'method'))}
+      />
     </div>
   )
 }
@@ -268,13 +299,39 @@ export function EducationPlanFields({ index, control, register }: EventFieldsPro
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <ChildPicker control={control} label="対象の子ども" {...register(eventPath(index, 'childId'))} />
-        <SelectInput label="未就学(保育・幼稚園)" options={[...NURSERY_OPTIONS]} {...register(eventPath(index, 'stages.nursery'))} />
-        <SelectInput label="小学校" options={[...SCHOOL_TYPE_OPTIONS]} {...register(eventPath(index, 'stages.elementary'))} />
-        <SelectInput label="中学校" options={[...SCHOOL_TYPE_OPTIONS]} {...register(eventPath(index, 'stages.juniorHigh'))} />
-        <SelectInput label="高校" options={[...SCHOOL_TYPE_OPTIONS]} {...register(eventPath(index, 'stages.highSchool'))} />
-        <SelectInput label="大学" options={[...UNIVERSITY_OPTIONS]} {...register(eventPath(index, 'stages.university'))} />
+        <SelectInput
+          label="未就学(保育・幼稚園)"
+          help={NURSERY_HELP}
+          options={[...NURSERY_OPTIONS]}
+          {...register(eventPath(index, 'stages.nursery'))}
+        />
+        <SelectInput
+          label="小学校"
+          help={SCHOOL_TYPE_HELP}
+          options={[...SCHOOL_TYPE_OPTIONS]}
+          {...register(eventPath(index, 'stages.elementary'))}
+        />
+        <SelectInput
+          label="中学校"
+          help={SCHOOL_TYPE_HELP}
+          options={[...SCHOOL_TYPE_OPTIONS]}
+          {...register(eventPath(index, 'stages.juniorHigh'))}
+        />
+        <SelectInput
+          label="高校"
+          help={SCHOOL_TYPE_HELP}
+          options={[...SCHOOL_TYPE_OPTIONS]}
+          {...register(eventPath(index, 'stages.highSchool'))}
+        />
+        <SelectInput
+          label="大学"
+          help={UNIVERSITY_HELP}
+          options={[...UNIVERSITY_OPTIONS]}
+          {...register(eventPath(index, 'stages.university'))}
+        />
         <SelectInput
           label="大学時の住まい"
+          help={UNIVERSITY_HOUSING_HELP}
           options={[...UNIVERSITY_HOUSING_OPTIONS]}
           {...register(eventPath(index, 'stages.universityHousing'))}
         />

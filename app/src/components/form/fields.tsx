@@ -23,7 +23,7 @@ export function Field({ label, hint, error, help, children }: FieldProps) {
   )
 }
 
-function HelpBadge({ text }: { text: string }) {
+export function HelpBadge({ text }: { text: string }) {
   const [open, setOpen] = useState(false)
 
   return (

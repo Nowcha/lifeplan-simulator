@@ -1,6 +1,7 @@
 /**
  * IDを手入力/コピペする代わりに、既存の人物・子ども・資産クラス・イベント・ローンから
- * 選ぶドロップダウン群。値は実体の id を格納するが、ユーザーはIDを意識しなくてよい。
+ * 選ぶドロップダウン群。値は実体の id を格納するが、ユーザーはIDを意識しなくてよい
+ * (選択肢のラベルは位置ベースの表示名で、生のIDは表示しない)。
  */
 import { forwardRef, type SelectHTMLAttributes } from 'react'
 import { useWatch, type Control } from 'react-hook-form'
@@ -21,13 +22,13 @@ export const PersonPicker = forwardRef<HTMLSelectElement, PickerProps>(function 
   ref
 ) {
   const persons = useWatch({ control, name: 'household.persons' }) ?? []
-  const options = persons.map((p, i) => ({ value: p?.id ?? '', label: `本人${i + 1}${p?.id ? `(${p.id})` : ''}` }))
+  const options = persons.map((p, i) => ({ value: p?.id ?? '', label: `本人${i + 1}` }))
   return <SelectInput ref={ref} options={[PLACEHOLDER, ...options]} {...props} />
 })
 
 export const ChildPicker = forwardRef<HTMLSelectElement, PickerProps>(function ChildPicker({ control, ...props }, ref) {
   const children = useWatch({ control, name: 'household.children' }) ?? []
-  const options = children.map((c, i) => ({ value: c?.id ?? '', label: `子ども${i + 1}${c?.id ? `(${c.id})` : ''}` }))
+  const options = children.map((c, i) => ({ value: c?.id ?? '', label: `子ども${i + 1}` }))
   return <SelectInput ref={ref} options={[PLACEHOLDER, ...options]} {...props} />
 })
 
@@ -36,7 +37,7 @@ export const AssetClassPicker = forwardRef<HTMLSelectElement, PickerProps>(funct
   ref
 ) {
   const assetClasses = useWatch({ control, name: 'assumptions.assetClasses' }) ?? []
-  const options = assetClasses.map((a) => ({ value: a?.id ?? '', label: a?.id || '(未設定)' }))
+  const options = assetClasses.map((a, i) => ({ value: a?.id ?? '', label: a?.id || `資産クラス${i + 1}` }))
   return <SelectInput ref={ref} options={[PLACEHOLDER, ...options]} {...props} />
 })
 
@@ -45,15 +46,20 @@ export const EducationEventPicker = forwardRef<HTMLSelectElement, PickerProps>(f
   ref
 ) {
   const events = useWatch({ control, name: 'events' }) ?? []
+  const children = useWatch({ control, name: 'household.children' }) ?? []
   const options = events
     .filter((e) => e?.type === 'education')
-    .map((e) => ({ value: e.id, label: e.id }))
+    .map((e, i) => {
+      const childIndex = children.findIndex((c) => c?.id === e.childId)
+      const who = childIndex >= 0 ? `子ども${childIndex + 1}` : `未設定${i + 1}`
+      return { value: e.id, label: `教育プラン(${who})` }
+    })
   return <SelectInput ref={ref} options={[PLACEHOLDER, ...options]} {...props} />
 })
 
 export const LoanPicker = forwardRef<HTMLSelectElement, PickerProps>(function LoanPicker({ control, ...props }, ref) {
   const events = useWatch({ control, name: 'events' }) ?? []
   const loans = events.filter((e) => e?.type === 'housing-purchase').flatMap((e) => e.loans ?? [])
-  const options = loans.map((l) => ({ value: l?.loanId ?? '', label: l?.loanId || '(未設定)' }))
+  const options = loans.map((l, i) => ({ value: l?.loanId ?? '', label: `ローン${i + 1}` }))
   return <SelectInput ref={ref} options={[PLACEHOLDER, ...options]} {...props} />
 })

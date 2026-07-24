@@ -29,7 +29,7 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
             label="追加"
             onClick={() =>
               persons.append({
-                id: `person-${persons.fields.length + 1}`,
+                id: `person-${Date.now()}`,
                 birthYearMonth: '1990-01',
                 employment: { type: 'salaried', healthInsurance: 'kyokai-kenpo' },
                 incomeCurve: [{ age: 30, monthlyBase: 300000, bonusAnnual: 900000, indexation: 'wage' }],
@@ -54,7 +54,7 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
           <AddButton
             label="追加"
             onClick={() =>
-              children.append({ id: `child-${children.fields.length + 1}`, birthYearMonth: '2026-01', educationPlanRef: '' })
+              children.append({ id: `child-${Date.now()}`, birthYearMonth: '2026-01', educationPlanRef: '' })
             }
           />
         }
@@ -63,7 +63,6 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
           {children.fields.map((field, index) => (
             <ItemCard key={field.id} title={`子ども${index + 1}`} onRemove={() => children.remove(index)}>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                <TextInput label="ID" hint="通常は変更不要(他の項目からは選択式で参照される)" {...register(`household.children.${index}.id`)} />
                 <MonthInput label="生年月" {...register(`household.children.${index}.birthYearMonth`)} />
                 <EducationEventPicker
                   control={control}

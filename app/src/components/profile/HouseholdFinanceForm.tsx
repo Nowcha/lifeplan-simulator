@@ -1,9 +1,19 @@
 import { useFieldArray, type Control, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
-import { AddButton, ItemCard, MonthInput, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
+import { AddButton, HelpBadge, ItemCard, MonthInput, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
 import { AssetClassPicker } from './pickers'
-import { ACCOUNT_TYPE_OPTIONS, CONTRIBUTION_ACCOUNT_OPTIONS, DRAWDOWN_ACCOUNT_OPTIONS, DRAWDOWN_STRATEGY_OPTIONS, INDEXATION_HELP, INDEXATION_OPTIONS } from '../../lib/formOptions'
+import {
+  ACCOUNT_TYPE_HELP,
+  ACCOUNT_TYPE_OPTIONS,
+  CONTRIBUTION_ACCOUNT_OPTIONS,
+  DRAWDOWN_ACCOUNT_OPTIONS,
+  DRAWDOWN_ORDER_HELP,
+  DRAWDOWN_STRATEGY_HELP,
+  DRAWDOWN_STRATEGY_OPTIONS,
+  INDEXATION_HELP,
+  INDEXATION_OPTIONS
+} from '../../lib/formOptions'
 
 interface HouseholdFinanceFormProps {
   control: Control<ProfileFormValues>
@@ -81,7 +91,12 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
                   hint="前提条件タブで定義したものから選ぶ"
                   {...register(`household.financialAssets.${index}.assetClassId`)}
                 />
-                <SelectInput label="口座" options={[...ACCOUNT_TYPE_OPTIONS]} {...register(`household.financialAssets.${index}.account`)} />
+                <SelectInput
+                  label="口座"
+                  help={ACCOUNT_TYPE_HELP}
+                  options={[...ACCOUNT_TYPE_OPTIONS]}
+                  {...register(`household.financialAssets.${index}.account`)}
+                />
                 <NumberInput label="残高" suffix="円" {...register(`household.financialAssets.${index}.balance`, { valueAsNumber: true })} />
                 <NumberInput label="取得原価" suffix="円" {...register(`household.financialAssets.${index}.costBasis`, { valueAsNumber: true })} />
                 <NumberInput
@@ -117,6 +132,7 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                     <SelectInput
                       label="口座"
+                      help={ACCOUNT_TYPE_HELP}
                       options={[...CONTRIBUTION_ACCOUNT_OPTIONS]}
                       {...register(`household.savingsPolicy.contributions.${index}.account`)}
                     />
@@ -141,6 +157,7 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               <SelectInput
                 label="方式"
+                help={DRAWDOWN_STRATEGY_HELP}
                 options={[...DRAWDOWN_STRATEGY_OPTIONS]}
                 {...register('household.savingsPolicy.drawdown.strategy')}
               />
@@ -152,7 +169,10 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
               />
             </div>
             <div className="mt-3">
-              <span className="text-xs text-ink-muted">取り崩し優先順(先頭から消費)</span>
+              <span className="inline-flex items-center gap-1.5 text-xs text-ink-muted">
+                取り崩し優先順(先頭から消費)
+                <HelpBadge text={DRAWDOWN_ORDER_HELP} />
+              </span>
               <div className="mt-2 flex flex-col gap-2">
                 {drawdownOrder.value.map((account, index) => (
                   <div key={index} className="flex items-center gap-3">

@@ -1,7 +1,7 @@
 import { useFieldArray, useWatch, type Control, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { AddButton, ItemCard, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
-import { BASE_RATE_MODEL_OPTIONS } from '../../lib/formOptions'
+import { BASE_RATE_MODEL_HELP, BASE_RATE_MODEL_OPTIONS } from '../../lib/formOptions'
 
 interface AssumptionsFormProps {
   control: Control<ProfileFormValues>
@@ -48,7 +48,11 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
           {assetClasses.fields.map((field, index) => (
             <ItemCard key={field.id} title={`資産クラス${index + 1}`} onRemove={() => assetClasses.remove(index)}>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                <TextInput label="ID" {...register(`assumptions.assetClasses.${index}.id`)} />
+                <TextInput
+                  label="名前"
+                  hint="保有資産・積立配分から選べるようになる呼び名"
+                  {...register(`assumptions.assetClasses.${index}.id`)}
+                />
                 <NumberInput label="期待リターン(年率)" step="0.001" {...register(`assumptions.assetClasses.${index}.expectedReturn`, { valueAsNumber: true })} />
                 <NumberInput label="ボラティリティ(年率)" step="0.001" {...register(`assumptions.assetClasses.${index}.volatility`, { valueAsNumber: true })} />
               </div>
@@ -62,7 +66,12 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
       <Section title="住宅ローン基準金利">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <NumberInput label="初期値" step="0.001" {...register('assumptions.baseRate.initial', { valueAsNumber: true })} />
-          <SelectInput label="モデル" options={[...BASE_RATE_MODEL_OPTIONS]} {...register('assumptions.baseRate.model')} />
+          <SelectInput
+            label="モデル"
+            help={BASE_RATE_MODEL_HELP}
+            options={[...BASE_RATE_MODEL_OPTIONS]}
+            {...register('assumptions.baseRate.model')}
+          />
         </div>
 
         {baseRateModel === 'mean-reverting' && (

@@ -2,7 +2,7 @@ import { useFieldArray, useWatch, type Control, type UseFormRegister, type UseFo
 import type { LifeEvent } from '../../../../engine/types/index.js'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { eventPath } from '../../lib/formPath'
-import { AddButton, ItemCard, Section, TextInput } from '../form/fields'
+import { AddButton, ItemCard, Section } from '../form/fields'
 import { EVENT_TYPE_OPTIONS } from '../../lib/formOptions'
 import {
   ChildbirthEventFields,
@@ -109,17 +109,22 @@ export function EventsForm({ control, register, setValue }: EventsFormProps) {
       </div>
 
       <div className="flex flex-col gap-4">
-        {events.fields.map((field, index) => {
-          const type = (field as unknown as { type: EventType }).type
-          return (
-            <ItemCard key={field.id} title={`${EVENT_LABELS[type] ?? type} (${field.id.slice(0, 8)})`} onRemove={() => events.remove(index)}>
-              <div className="mb-3 max-w-xs">
-                <TextInput label="ID" hint="他イベント・データから参照される識別子" {...register(`events.${index}.id`)} />
-              </div>
-              <EventItem index={index} control={control} register={register} setValue={setValue} />
-            </ItemCard>
-          )
-        })}
+        {(() => {
+          const typeCounters: Partial<Record<EventType, number>> = {}
+          return events.fields.map((field, index) => {
+            const type = (field as unknown as { type: EventType }).type
+            typeCounters[type] = (typeCounters[type] ?? 0) + 1
+            return (
+              <ItemCard
+                key={field.id}
+                title={`${EVENT_LABELS[type] ?? type}${typeCounters[type]}`}
+                onRemove={() => events.remove(index)}
+              >
+                <EventItem index={index} control={control} register={register} setValue={setValue} />
+              </ItemCard>
+            )
+          })
+        })()}
       </div>
 
       {events.fields.length === 0 && <AddButton label="イベントを追加" onClick={() => events.append(defaultEventFor('one-time', `event-${Date.now()}`))} />}

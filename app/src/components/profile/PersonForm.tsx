@@ -1,7 +1,14 @@
 import { useFieldArray, type Control, type UseFormRegister } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
-import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput, TextInput } from '../form/fields'
-import { EMPLOYMENT_TYPE_OPTIONS, HEALTH_INSURANCE_OPTIONS, INDEXATION_HELP, INDEXATION_OPTIONS } from '../../lib/formOptions'
+import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput } from '../form/fields'
+import {
+  EMPLOYMENT_TYPE_HELP,
+  EMPLOYMENT_TYPE_OPTIONS,
+  HEALTH_INSURANCE_HELP,
+  HEALTH_INSURANCE_OPTIONS,
+  INDEXATION_HELP,
+  INDEXATION_OPTIONS
+} from '../../lib/formOptions'
 
 interface PersonFormProps {
   index: number
@@ -17,12 +24,17 @@ export function PersonForm({ index, control, register, onRemove }: PersonFormPro
   return (
     <ItemCard title={`本人${index + 1}`} onRemove={onRemove}>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <TextInput label="ID" hint="通常は変更不要(他の項目からは選択式で参照される)" {...register(`${path}.id`)} />
         <MonthInput label="生年月" {...register(`${path}.birthYearMonth`)} />
         <NumberInput label="退職年齢" suffix="歳" {...register(`${path}.retirementAge`, { valueAsNumber: true })} />
-        <SelectInput label="就業形態" options={[...EMPLOYMENT_TYPE_OPTIONS]} {...register(`${path}.employment.type`)} />
+        <SelectInput
+          label="就業形態"
+          help={EMPLOYMENT_TYPE_HELP}
+          options={[...EMPLOYMENT_TYPE_OPTIONS]}
+          {...register(`${path}.employment.type`)}
+        />
         <SelectInput
           label="健康保険"
+          help={HEALTH_INSURANCE_HELP}
           options={[...HEALTH_INSURANCE_OPTIONS]}
           {...register(`${path}.employment.healthInsurance`)}
         />
