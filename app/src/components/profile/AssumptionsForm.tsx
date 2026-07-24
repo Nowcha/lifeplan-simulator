@@ -1,7 +1,16 @@
 import { useFieldArray, useWatch, type Control, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
-import { AddButton, ItemCard, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
+import { AddButton, HelpBadge, ItemCard, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
 import { BASE_RATE_MODEL_HELP, BASE_RATE_MODEL_OPTIONS } from '../../lib/formOptions'
+
+/** engine/montecarlo/paths.ts の BASE_RATE_FACTOR_ID と一致させる固定値。変更すると相関構造が壊れる。 */
+const BASE_RATE_FACTOR_ID = 'base-rate'
+
+const CORRELATION_HELP =
+  '相関係数は、2つの要因が同じ方向に動きやすいか(正の値)、逆方向に動きやすいか(負の値)、無関係か(0)を表す統計指標(-1〜1)。' +
+  'モンテカルロが毎年の変動をランダムに生成する際、この数値に従って要因どうしの動きに関連性を持たせる。' +
+  '例: 株式と債券をマイナス(株安のとき債券が買われやすい)、株式とインフレ・株式と金利をプラス寄りにする、など。' +
+  '通常は初期値のままで問題なく、より現実の値動きに近づけたい場合だけ調整する。'
 
 interface AssumptionsFormProps {
   control: Control<ProfileFormValues>
@@ -36,7 +45,7 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
 
       <Section
         title="資産クラス"
-        note="idは保有資産・積立配分・相関行列から参照される。"
+        note="名前は保有資産・積立配分・相関行列から参照される。"
         actions={
           <AddButton
             label="追加"
@@ -130,7 +139,7 @@ function CorrelationMatrixEditor({
 
   function addFactor() {
     const n = cm.factors.length
-    const factors = [...cm.factors, `factor-${n + 1}`]
+    const factors = [...cm.factors, `新しい要因${n + 1}`]
     const matrix = cm.matrix.map((row) => [...row, 0])
     const newRow = new Array(n + 1).fill(0)
     newRow[n] = 1
@@ -161,55 +170,66 @@ function CorrelationMatrixEditor({
   return (
     <Section
       title="相関行列"
-      note="資産クラス・インフレ・基準金利の変動要因間の相関(-1〜1)。対角は常に1。セルを編集すると対称になるよう自動でミラーする。"
+      note="各行は「その要因が他の要因とどれだけ連動するか」。対角(自分自身)は常に1で編集不可。セルを編集すると対称になるよう自動でミラーする。"
       actions={<AddButton label="要因を追加" onClick={addFactor} />}
     >
+      <div className="mb-4 flex items-center gap-1.5 text-sm text-ink-secondary">
+        相関係数の読み方
+        <HelpBadge text={CORRELATION_HELP} />
+      </div>
+
       {cm.factors.length === 0 ? (
         <p className="text-sm text-ink-muted">要因がありません。</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="border-collapse text-sm">
-            <thead>
-              <tr>
-                <th className="p-1" />
-                {cm.factors.map((_, j) => (
-                  <th key={j} className="p-1 text-xs text-ink-muted">
-                    {j + 1}
-                  </th>
-                ))}
-              </tr>
-            </thead>
             <tbody>
-              {cm.factors.map((factor, i) => (
-                <tr key={i}>
-                  <td className="p-1">
-                    <div className="flex items-center gap-1">
-                      <input
-                        value={factor}
-                        onChange={(e) => renameFactor(i, e.target.value)}
-                        className="w-28 rounded-sm border border-hairline-strong bg-surface px-2 py-1 text-xs text-ink outline-none focus:border-amber-500"
-                      />
-                      <button type="button" onClick={() => removeFactor(i)} className="text-xs text-ink-muted hover:text-critical">
-                        ×
-                      </button>
-                    </div>
-                  </td>
-                  {cm.factors.map((_, j) => (
-                    <td key={j} className="p-1">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min={-1}
-                        max={1}
-                        disabled={i === j}
-                        value={i === j ? 1 : (cm.matrix[i]?.[j] ?? 0)}
-                        onChange={(e) => setCell(i, j, Number(e.target.value))}
-                        className="w-16 rounded-sm border border-hairline-strong bg-surface px-1.5 py-1 text-xs text-ink outline-none focus:border-amber-500 disabled:bg-surface-2 disabled:text-ink-muted"
-                      />
+              {cm.factors.map((factor, i) => {
+                const isBaseRate = factor === BASE_RATE_FACTOR_ID
+                return (
+                  <tr key={i}>
+                    <td className="p-1">
+                      <div className="flex items-center gap-1">
+                        {isBaseRate ? (
+                          <span className="w-32 truncate text-xs text-ink" title="engine側の固定ID(名称変更不可)">
+                            住宅ローン基準金利
+                          </span>
+                        ) : (
+                          <input
+                            value={factor}
+                            onChange={(e) => renameFactor(i, e.target.value)}
+                            className="w-32 rounded-sm border border-hairline-strong bg-surface px-2 py-1 text-xs text-ink outline-none focus:border-amber-500"
+                          />
+                        )}
+                        <button type="button" onClick={() => removeFactor(i)} className="text-xs text-ink-muted hover:text-critical">
+                          ×
+                        </button>
+                      </div>
                     </td>
-                  ))}
-                </tr>
-              ))}
+                    {cm.factors.map((otherFactor, j) => {
+                      if (j > i) return <td key={j} className="p-1" />
+                      return (
+                        <td key={j} className="p-1">
+                          {i === j ? (
+                            <span className="flex h-[26px] w-16 items-center justify-center text-xs text-ink-muted">1</span>
+                          ) : (
+                            <input
+                              type="number"
+                              step="0.01"
+                              min={-1}
+                              max={1}
+                              value={cm.matrix[i]?.[j] ?? 0}
+                              onChange={(e) => setCell(i, j, Number(e.target.value))}
+                              title={`${factor} × ${otherFactor}`}
+                              className="w-16 rounded-sm border border-hairline-strong bg-surface px-1.5 py-1 text-xs text-ink outline-none focus:border-amber-500"
+                            />
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
