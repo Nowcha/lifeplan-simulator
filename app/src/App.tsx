@@ -111,7 +111,19 @@ export default function App() {
         {view === 'compare' && <ScenarioCompareView scenarios={scenarios} onScenariosChanged={refreshScenarios} />}
         {view === 'dashboard' && <DashboardView result={result} error={error} />}
       </main>
+
+      <Disclaimer />
     </div>
+  )
+}
+
+function Disclaimer() {
+  return (
+    <footer className="mx-auto mt-10 max-w-5xl px-6">
+      <p className="border-t border-hairline pt-4 text-xs leading-relaxed text-ink-muted">
+        免責事項: 本ツールは税務相談・投資助言ではありません。計算結果は各種制度の簡易モデルによる概算であり、正確性を保証しません。実際の税額・保険料・給付額は税理士・社会保険労務士等の専門家、または公的機関にご確認ください。
+      </p>
+    </footer>
   )
 }
 
