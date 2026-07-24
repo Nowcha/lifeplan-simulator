@@ -1,7 +1,7 @@
 import { useFieldArray, type Control, type UseFormRegister } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput, TextInput } from '../form/fields'
-import { EMPLOYMENT_TYPE_OPTIONS, HEALTH_INSURANCE_OPTIONS, INDEXATION_OPTIONS } from '../../lib/formOptions'
+import { EMPLOYMENT_TYPE_OPTIONS, HEALTH_INSURANCE_OPTIONS, INDEXATION_HELP, INDEXATION_OPTIONS } from '../../lib/formOptions'
 
 interface PersonFormProps {
   index: number
@@ -67,6 +67,7 @@ export function PersonForm({ index, control, register, onRemove }: PersonFormPro
               />
               <SelectInput
                 label="改定方法"
+                help={INDEXATION_HELP}
                 options={[...INDEXATION_OPTIONS]}
                 {...register(`${path}.incomeCurve.${curveIndex}.indexation`)}
               />

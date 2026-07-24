@@ -1,20 +1,56 @@
-import { forwardRef, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
+import { forwardRef, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
 
 interface FieldProps {
   label: string
   hint?: string
   error?: string
+  /** ラベル横に "?" アイコンを出し、クリックで補足説明を表示する */
+  help?: string
   children: ReactNode
 }
 
-export function Field({ label, hint, error, children }: FieldProps) {
+export function Field({ label, hint, error, help, children }: FieldProps) {
   return (
     <label className="flex flex-col gap-1 text-sm">
-      <span className="text-ink-secondary">{label}</span>
+      <span className="flex items-center gap-1.5 text-ink-secondary">
+        {label}
+        {help && <HelpBadge text={help} />}
+      </span>
       {children}
       {hint && !error && <span className="text-xs text-ink-muted">{hint}</span>}
       {error && <span className="text-xs text-critical">{error}</span>}
     </label>
+  )
+}
+
+function HelpBadge({ text }: { text: string }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <span className="relative inline-flex">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setOpen((o) => !o)
+        }}
+        onBlur={() => setOpen(false)}
+        aria-label={`${text}について説明を表示`}
+        aria-expanded={open}
+        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-hairline-strong text-[10px] leading-none text-ink-muted hover:border-amber-500 hover:text-amber-700"
+      >
+        ?
+      </button>
+      {open && (
+        <span
+          role="tooltip"
+          className="absolute left-1/2 top-full z-20 mt-1.5 w-56 -translate-x-1/2 rounded-sm border border-hairline-strong bg-surface p-2.5 text-xs leading-relaxed font-normal text-ink-secondary shadow-md"
+        >
+          {text}
+        </span>
+      )}
+    </span>
   )
 }
 
@@ -25,14 +61,15 @@ type TextInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string
   hint?: string
   error?: string
+  help?: string
 }
 
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function TextInput(
-  { label, hint, error, className, ...props },
+  { label, hint, error, help, className, ...props },
   ref
 ) {
   return (
-    <Field label={label} hint={hint} error={error}>
+    <Field label={label} hint={hint} error={error} help={help}>
       <input ref={ref} className={`${inputClass} ${className ?? ''}`} {...props} />
     </Field>
   )
@@ -42,15 +79,16 @@ type MonthInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'pla
   label: string
   hint?: string
   error?: string
+  help?: string
 }
 
 /** YearMonth("YYYY-MM")用のネイティブ月選択(カレンダーUI)。ブラウザ標準のtype="month"を使う。 */
 export const MonthInput = forwardRef<HTMLInputElement, MonthInputProps>(function MonthInput(
-  { label, hint, error, className, ...props },
+  { label, hint, error, help, className, ...props },
   ref
 ) {
   return (
-    <Field label={label} hint={hint} error={error}>
+    <Field label={label} hint={hint} error={error} help={help}>
       <input ref={ref} type="month" className={`${inputClass} ${className ?? ''}`} {...props} />
     </Field>
   )
@@ -60,15 +98,16 @@ type NumberInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string
   hint?: string
   error?: string
+  help?: string
   suffix?: string
 }
 
 export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(function NumberInput(
-  { label, hint, error, suffix, className, ...props },
+  { label, hint, error, help, suffix, className, ...props },
   ref
 ) {
   return (
-    <Field label={label} hint={hint} error={error}>
+    <Field label={label} hint={hint} error={error} help={help}>
       <div className="flex items-center gap-2">
         <input ref={ref} type="number" className={`${inputClass} ${className ?? ''}`} {...props} />
         {suffix && <span className="shrink-0 text-xs text-ink-muted">{suffix}</span>}
@@ -81,15 +120,16 @@ type SelectInputProps = SelectHTMLAttributes<HTMLSelectElement> & {
   label: string
   hint?: string
   error?: string
+  help?: string
   options: { value: string; label: string }[]
 }
 
 export const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(function SelectInput(
-  { label, hint, error, options, className, ...props },
+  { label, hint, error, help, options, className, ...props },
   ref
 ) {
   return (
-    <Field label={label} hint={hint} error={error}>
+    <Field label={label} hint={hint} error={error} help={help}>
       <select ref={ref} className={`${inputClass} ${className ?? ''}`} {...props}>
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>

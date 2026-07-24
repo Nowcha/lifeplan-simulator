@@ -2,7 +2,7 @@ import { useFieldArray, type Control, type UseFormRegister, type UseFormSetValue
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, ItemCard, MonthInput, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
-import { ACCOUNT_TYPE_OPTIONS, CONTRIBUTION_ACCOUNT_OPTIONS, DRAWDOWN_ACCOUNT_OPTIONS, DRAWDOWN_STRATEGY_OPTIONS, INDEXATION_OPTIONS } from '../../lib/formOptions'
+import { ACCOUNT_TYPE_OPTIONS, CONTRIBUTION_ACCOUNT_OPTIONS, DRAWDOWN_ACCOUNT_OPTIONS, DRAWDOWN_STRATEGY_OPTIONS, INDEXATION_HELP, INDEXATION_OPTIONS } from '../../lib/formOptions'
 
 interface HouseholdFinanceFormProps {
   control: Control<ProfileFormValues>
@@ -38,7 +38,12 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <TextInput label="項目名" {...register(`household.baseExpenses.${index}.label`)} />
                 <NumberInput label="月額" suffix="円" {...register(`household.baseExpenses.${index}.monthly`, { valueAsNumber: true })} />
-                <SelectInput label="改定方法" options={[...INDEXATION_OPTIONS]} {...register(`household.baseExpenses.${index}.indexation`)} />
+                <SelectInput
+                  label="改定方法"
+                  help={INDEXATION_HELP}
+                  options={[...INDEXATION_OPTIONS]}
+                  {...register(`household.baseExpenses.${index}.indexation`)}
+                />
                 <MonthInput
                   label="開始年月(任意)"
                   {...register(`household.baseExpenses.${index}.activeFrom`)}

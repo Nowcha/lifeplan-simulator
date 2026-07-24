@@ -6,6 +6,10 @@ export const INDEXATION_OPTIONS = [
   { value: 'wage', label: '賃金上昇連動' }
 ] as const
 
+/** 改定方法(indexation)の補足説明。前提条件タブのインフレ率・賃金上昇率と連動する。 */
+export const INDEXATION_HELP =
+  '金額が毎年どう変わるかの指定。固定(据え置き)=ずっと同じ金額。インフレ連動=前提条件のインフレ率で毎年増減。賃金上昇連動=前提条件の賃金上昇率で毎年増減。'
+
 export const EMPLOYMENT_TYPE_OPTIONS = [
   { value: 'salaried', label: '給与所得者' },
   { value: 'self-employed', label: '自営業' },

@@ -5,6 +5,8 @@ import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput, TextInput } from '../form/fields'
 import {
   GROUP_CREDIT_LIFE_OPTIONS,
+  INDEXATION_HELP,
+  INDEXATION_OPTIONS,
   LOAN_METHOD_OPTIONS,
   NURSERY_OPTIONS,
   PREPAYMENT_METHOD_OPTIONS,
@@ -313,11 +315,8 @@ export function RecurringModifierEventFields({ index, register }: EventFieldsPro
       <NumberInput label="発生回数(任意)" hint="空欄=期間中ずっと" {...register(eventPath(index, 'occurrences'), { valueAsNumber: true })} />
       <SelectInput
         label="改定方法"
-        options={[
-          { value: 'fixed', label: '固定(据え置き)' },
-          { value: 'inflation', label: 'インフレ連動' },
-          { value: 'wage', label: '賃金上昇連動' }
-        ]}
+        help={INDEXATION_HELP}
+        options={[...INDEXATION_OPTIONS]}
         {...register(eventPath(index, 'indexation'))}
       />
     </div>
