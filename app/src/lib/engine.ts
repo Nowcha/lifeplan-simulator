@@ -14,6 +14,8 @@ import sampleEvents from "../../../profile.sample/events.json";
 import sampleAssumptions from "../../../profile.sample/assumptions.json";
 import rules2026 from "../../../rules/2026.json";
 
+import SimulationWorker from "./simulation.worker.ts?worker";
+
 export const household = sampleHousehold as unknown as Household;
 export const events = sampleEvents as unknown as LifeEvent[];
 export const assumptions = sampleAssumptions as unknown as Assumptions;
@@ -25,30 +27,41 @@ export interface SimulationBundle {
   sensitivity: SensitivityFactor[];
 }
 
+export interface SimulationInput {
+  household: Household;
+  events: LifeEvent[];
+  assumptions: Assumptions;
+  rules: RuleSet;
+}
+
 /**
- * ブラウザのメインスレッドで同期実行するため、assumptions.json本来のpaths
- * (10,000)は使わず縮小する — 10,000パスは実測で約3.7秒UIをブロックする。
- * 感度分析は要因数×2回モンテカルロを回すためさらに絞る。将来的にWeb
- * Workerへオフロードすれば本来のpaths数に戻せる(design doc §0: エンジンは
- * ブラウザAPI非依存でWeb Workerにそのまま載る設計)。
+ * デターミニスティックパス・モンテカルロ・感度分析をすべて実行する(同期・重い計算)。
+ * assumptions本来のpaths(design doc既定10,000)をそのまま使う — メインスレッドを
+ * ブロックしないよう、このモジュールを直接importするのは simulation.worker.ts のみ
+ * (design doc §0: エンジンはブラウザAPI非依存でWeb Workerにそのまま載る設計)。
  */
-const UI_MONTE_CARLO_PATHS = 500;
-const UI_SENSITIVITY_PATHS = 150;
-
-/** Runs the deterministic path, the full Monte Carlo summary, and sensitivity in one pass */
-export function runSimulation(): SimulationBundle {
+export function computeSimulation(input: SimulationInput): SimulationBundle {
+  const { household, events, assumptions, rules } = input;
   const deterministic = runDeterministic(household, events, assumptions, rules);
-
-  const monteCarloAssumptions: Assumptions = {
-    ...assumptions,
-    simulation: { ...assumptions.simulation, paths: UI_MONTE_CARLO_PATHS }
-  };
-  const sensitivityAssumptions: Assumptions = {
-    ...assumptions,
-    simulation: { ...assumptions.simulation, paths: UI_SENSITIVITY_PATHS }
-  };
-
-  const monteCarlo = runMonteCarlo(household, events, monteCarloAssumptions, rules);
-  const sensitivity = runSensitivity(household, events, sensitivityAssumptions, rules);
+  const monteCarlo = runMonteCarlo(household, events, assumptions, rules);
+  const sensitivity = runSensitivity(household, events, assumptions, rules);
   return { deterministic, monteCarlo, sensitivity };
+}
+
+/** Web Worker上でサンプルプロフィールのシミュレーションを実行し、メインスレッドをブロックしない */
+export function runSimulationInWorker(): Promise<SimulationBundle> {
+  return new Promise((resolve, reject) => {
+    const worker = new SimulationWorker();
+
+    worker.onmessage = (event: MessageEvent<SimulationBundle>) => {
+      resolve(event.data);
+      worker.terminate();
+    };
+    worker.onerror = (event: ErrorEvent) => {
+      reject(new Error(event.message || "シミュレーションWorkerでエラーが発生しました"));
+      worker.terminate();
+    };
+
+    worker.postMessage(undefined);
+  });
 }
