@@ -11,4 +11,7 @@ export default defineConfig({
   server: {
     fs: { allow: ['..'] },
   },
+  // GitHub Pagesはプロジェクトページとして https://<user>.github.io/lifeplan-simulator/
+  // 配下に配信されるため、CIビルド時のみbaseを切り替える(ローカル開発は"/"のまま)。
+  base: process.env.GITHUB_PAGES === 'true' ? '/lifeplan-simulator/' : '/',
 })
