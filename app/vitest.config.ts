@@ -8,8 +8,11 @@ import { defineConfig } from 'vitest/config'
  */
 export default defineConfig({
   test: {
+    // 既定は node。純粋ロジックのテストはこの方が速く、localStorage が
+    // 「存在しない」前提のスタブもそのまま使える。DOMが要るコンポーネントの
+    // テストはファイル先頭の `// @vitest-environment jsdom` で個別に切り替える。
     environment: 'node',
-    include: ['src/**/__tests__/**/*.test.ts'],
+    include: ['src/**/__tests__/**/*.test.ts', 'src/**/__tests__/**/*.test.tsx'],
     coverage: {
       provider: 'v8',
       include: ['src/lib/**/*.ts'],
