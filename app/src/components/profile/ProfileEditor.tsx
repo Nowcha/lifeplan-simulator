@@ -46,6 +46,35 @@ export function ProfileEditor({ initialProfile, onApply, onReset, onScenarioSave
     onScenarioSaved(name)
   }
 
+  const secondaryActions = (
+    <>
+      <button
+        type="button"
+        onClick={onReset}
+        className="min-h-11 shrink-0 rounded-sm border border-hairline-strong px-4 py-2 text-sm text-ink-secondary hover:border-critical hover:text-critical sm:min-h-0"
+      >
+        サンプルに戻す
+      </button>
+      <div className="flex gap-2 sm:ml-auto sm:items-center">
+        <input
+          value={scenarioName}
+          onChange={(e) => setScenarioName(e.target.value)}
+          placeholder="シナリオ名(例: 転職した場合)"
+          aria-label="シナリオ名"
+          className="min-h-11 w-full min-w-0 rounded-sm border border-hairline-strong bg-surface px-3 py-1.5 text-base text-ink outline-none focus:border-amber-500 sm:min-h-0 sm:w-auto sm:text-sm"
+        />
+        <button
+          type="button"
+          onClick={() => void handleSaveScenario()}
+          disabled={!scenarioName.trim()}
+          className="min-h-11 shrink-0 rounded-sm border border-hairline-strong px-4 py-2 text-sm text-ink-secondary hover:border-amber-500 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
+        >
+          シナリオとして保存
+        </button>
+      </div>
+    </>
+  )
+
   return (
     <FormProvider {...form}>
     <UndoProvider>
@@ -82,7 +111,10 @@ export function ProfileEditor({ initialProfile, onApply, onReset, onScenarioSave
         <AssumptionsForm control={control} register={register} setValue={setValue} />
       </div>
 
-      <div className="sticky bottom-0 mt-8 border-t border-hairline bg-page py-4">
+      {/* 固定バーは画面の高さを常時奪うため、狭い画面では主操作だけを残す */}
+      <div className="mt-8 flex flex-col gap-3 border-t border-hairline pt-6 sm:hidden">{secondaryActions}</div>
+
+      <div className="sticky bottom-0 mt-4 border-t border-hairline bg-page py-4 sm:mt-8">
         {undoBanner}
         {errorCategories.length > 0 && (
           <div role="alert" className="mb-3 rounded-sm border border-critical/40 bg-critical/5 px-4 py-3 text-sm">
@@ -104,40 +136,15 @@ export function ProfileEditor({ initialProfile, onApply, onReset, onScenarioSave
           </div>
         )}
 
-        {/* 狭い画面では主操作を1行目、シナリオ保存を2行目に分ける(横並びだと折返しで潰れる) */}
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              className="min-h-11 flex-1 rounded-sm bg-amber-500 px-5 py-2 text-sm font-medium text-white hover:bg-amber-700 sm:min-h-0 sm:flex-initial"
-            >
-              保存して再計算
-            </button>
-            <button
-              type="button"
-              onClick={onReset}
-              className="min-h-11 shrink-0 rounded-sm border border-hairline-strong px-4 py-2 text-sm text-ink-secondary hover:border-critical hover:text-critical sm:min-h-0"
-            >
-              サンプルに戻す
-            </button>
-          </div>
-          <div className="flex gap-2 sm:ml-auto sm:items-center">
-            <input
-              value={scenarioName}
-              onChange={(e) => setScenarioName(e.target.value)}
-              placeholder="シナリオ名(例: 転職した場合)"
-              aria-label="シナリオ名"
-              className="min-h-11 w-full min-w-0 rounded-sm border border-hairline-strong bg-surface px-3 py-1.5 text-base text-ink outline-none focus:border-amber-500 sm:min-h-0 sm:w-auto sm:text-sm"
-            />
-            <button
-              type="button"
-              onClick={() => void handleSaveScenario()}
-              disabled={!scenarioName.trim()}
-              className="min-h-11 shrink-0 rounded-sm border border-hairline-strong px-4 py-2 text-sm text-ink-secondary hover:border-amber-500 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
-            >
-              シナリオとして保存
-            </button>
-          </div>
+          <button
+            type="submit"
+            className="min-h-11 w-full rounded-sm bg-amber-500 px-5 py-2 text-sm font-medium text-white hover:bg-amber-700 sm:min-h-0 sm:w-auto"
+          >
+            保存して再計算
+          </button>
+          {/* 副次操作は広い画面でだけ固定バーに同居させる(狭い画面ではフォーム末尾に置く) */}
+          <div className="hidden sm:contents">{secondaryActions}</div>
         </div>
       </div>
     </form>
