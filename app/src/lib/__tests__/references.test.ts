@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'vitest'
 import type { EditableProfile } from '../profileStorage'
-import { describeEventRemoval, describeReferences, findReferences } from '../references'
+import {
+  describeEventRemoval,
+  describeReferences,
+  findReferences,
+  renameExpenseLabelReferences,
+} from '../references'
 
 /** 相互参照だけを持つ最小のプロフィール。他のフィールドは参照解決に関係しない */
 const profile = {
@@ -149,6 +154,54 @@ describe('describeEventRemoval', () => {
 
   test('範囲外の index は undefined', () => {
     expect(describeEventRemoval(profile, 99)).toBeUndefined()
+  })
+})
+
+describe('renameExpenseLabelReferences', () => {
+  const events = [
+    { type: 'housing-purchase', terminatesExpenseLabels: ['住居費(賃貸)', '駐車場'] },
+    { type: 'housing-purchase', terminatesExpenseLabels: ['住居費(賃貸)'] },
+    { type: 'recurring', terminatesExpenseLabels: ['住居費(賃貸)'] },
+    { type: 'one-time' },
+  ]
+
+  test('住宅購入イベントの参照を新しい名前に置き換える', () => {
+    const result = renameExpenseLabelReferences(events, '住居費(賃貸)', '家賃')
+
+    expect(result.changed).toBe(2)
+    expect(result.events[0]).toEqual({ type: 'housing-purchase', terminatesExpenseLabels: ['家賃', '駐車場'] })
+    expect(result.events[1]).toEqual({ type: 'housing-purchase', terminatesExpenseLabels: ['家賃'] })
+  })
+
+  test('住宅購入以外のイベントは書き換えない(この参照は住宅購入固有)', () => {
+    const result = renameExpenseLabelReferences(events, '住居費(賃貸)', '家賃')
+
+    expect(result.events[2]).toEqual({ type: 'recurring', terminatesExpenseLabels: ['住居費(賃貸)'] })
+  })
+
+  test('一致しない名前の変更では何も起きない', () => {
+    expect(renameExpenseLabelReferences(events, '光熱費', '電気代').changed).toBe(0)
+  })
+
+  test('空の旧名・同名への変更は何もしない(初回入力や無変更のblurで誤爆させない)', () => {
+    expect(renameExpenseLabelReferences(events, '', '新しい費目').changed).toBe(0)
+    expect(renameExpenseLabelReferences(events, '食費', '食費').changed).toBe(0)
+  })
+
+  test('元の配列とイベントを破壊しない', () => {
+    const original = structuredClone(events)
+    const result = renameExpenseLabelReferences(events, '住居費(賃貸)', '家賃')
+
+    expect(events).toEqual(original)
+    expect(result.events[0]).not.toBe(events[0])
+    // 変更のないイベントは同じ参照のまま返す(不要な再描画を避けるため)
+    expect(result.events[3]).toBe(events[3])
+  })
+
+  test('terminatesExpenseLabels が無い住宅購入イベントでも落ちない', () => {
+    const withoutLabels = [{ type: 'housing-purchase' }] as unknown[]
+
+    expect(renameExpenseLabelReferences(withoutLabels, 'a', 'b').changed).toBe(0)
   })
 })
 

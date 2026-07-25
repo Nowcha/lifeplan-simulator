@@ -103,6 +103,36 @@ export function findReferences(profile: EditableProfile, target: ReferenceTarget
   return refs
 }
 
+/**
+ * 費目名の変更に追随して、住宅購入イベントの terminatesExpenseLabels を書き換える。
+ *
+ * この参照だけが名前ベース(他は全てid参照)なので、参照先の表示名を変えると
+ * 参照が黙って切れる。リネームを検知して参照側も同時に更新するために使う。
+ */
+export function renameExpenseLabelReferences<T>(
+  events: readonly T[],
+  oldLabel: string,
+  newLabel: string
+): { events: T[]; changed: number } {
+  if (oldLabel === '' || oldLabel === newLabel) return { events: [...events], changed: 0 }
+
+  let changed = 0
+  const updated = events.map((event) => {
+    const labels = prop(event, 'terminatesExpenseLabels')
+    if (prop(event, 'type') !== 'housing-purchase' || !Array.isArray(labels)) return event
+    if (!labels.includes(oldLabel)) return event
+
+    const nextLabels = labels.map((label) => {
+      if (label !== oldLabel) return label
+      changed += 1
+      return newLabel
+    })
+    return { ...(event as object), terminatesExpenseLabels: nextLabels } as T
+  })
+
+  return { events: updated, changed }
+}
+
 function formatWarning(refs: readonly string[]): string | undefined {
   if (refs.length === 0) return undefined
   return `この項目は次の${refs.length}箇所から参照されています。削除すると参照先が失われ、計算できなくなることがあります。\n\n・${refs.join('\n・')}`
