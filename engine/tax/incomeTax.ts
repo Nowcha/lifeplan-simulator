@@ -45,12 +45,7 @@ export function spouseDeductionAmount(
   config: { spouseIncomeMax: Yen; steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[] }
 ): Yen {
   if (spouseTotalIncome === undefined || spouseTotalIncome > config.spouseIncomeMax) return 0;
-  for (const step of config.steps) {
-    if (step.ownerIncomeUpTo === null || ownerTotalIncome <= step.ownerIncomeUpTo) {
-      return step.amount;
-    }
-  }
-  return 0;
+  return stepAmount(config.steps, ownerTotalIncome);
 }
 
 export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxResult {

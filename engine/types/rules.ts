@@ -76,7 +76,7 @@ export interface ResidentTaxRules {
      * 納税者本人の合計所得金額で段階的に 5万/4万/2万 と変わる。
      * ステップは `spouseDeduction.steps` と同じ境界だが金額だけが異なる。
      */
-    spouseDeductionGap: { steps: { incomeUpTo: Yen | null; amount: Yen }[] };
+    spouseDeductionGap: { steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[] };
     /** 人的控除額の差 per dependent: 一般 5万 (38万-33万) / 特定 18万 (63万-45万) */
     generalDependentGap: Yen;
     specificDependentGap: Yen;
