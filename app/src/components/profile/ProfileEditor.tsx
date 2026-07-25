@@ -48,13 +48,14 @@ export function ProfileEditor({ initialProfile, onApply, onReset, onScenarioSave
   return (
     <FormProvider {...form}>
     <form onSubmit={handleSubmit(onApply)}>
-      <nav className="sticky top-0 z-10 -mx-6 flex gap-2 border-b border-hairline bg-page/95 px-6 py-3 backdrop-blur-sm">
+      <nav className="sticky top-0 z-10 -mx-4 flex gap-2 overflow-x-auto border-b border-hairline bg-page/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6">
         {CATEGORIES.map((c) => (
           <button
             key={c.key}
             type="button"
             onClick={() => setCategory(c.key)}
-            className={`rounded-sm border px-4 py-1.5 text-sm ${
+            aria-current={category === c.key ? 'true' : undefined}
+            className={`min-h-11 shrink-0 rounded-sm border px-4 py-1.5 text-sm sm:min-h-0 ${
               category === c.key
                 ? 'border-ink bg-ink text-page'
                 : 'border-hairline-strong text-ink-secondary hover:border-ink'
@@ -99,33 +100,40 @@ export function ProfileEditor({ initialProfile, onApply, onReset, onScenarioSave
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-4">
-        <button type="submit" className="rounded-sm bg-amber-500 px-5 py-2 text-sm font-medium text-white hover:bg-amber-700">
-          保存して再計算
-        </button>
-        <button
-          type="button"
-          onClick={onReset}
-          className="rounded-sm border border-hairline-strong px-4 py-2 text-sm text-ink-secondary hover:border-critical hover:text-critical"
-        >
-          サンプルに戻す
-        </button>
-        <div className="ml-auto flex items-center gap-2">
-          <input
-            value={scenarioName}
-            onChange={(e) => setScenarioName(e.target.value)}
-            placeholder="シナリオ名(例: 転職した場合)"
-            className="rounded-sm border border-hairline-strong bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-amber-500"
-          />
-          <button
-            type="button"
-            onClick={() => void handleSaveScenario()}
-            disabled={!scenarioName.trim()}
-            className="rounded-sm border border-hairline-strong px-4 py-2 text-sm text-ink-secondary hover:border-amber-500 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            シナリオとして保存
-          </button>
-        </div>
+        {/* 狭い画面では主操作を1行目、シナリオ保存を2行目に分ける(横並びだと折返しで潰れる) */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              className="min-h-11 flex-1 rounded-sm bg-amber-500 px-5 py-2 text-sm font-medium text-white hover:bg-amber-700 sm:min-h-0 sm:flex-initial"
+            >
+              保存して再計算
+            </button>
+            <button
+              type="button"
+              onClick={onReset}
+              className="min-h-11 shrink-0 rounded-sm border border-hairline-strong px-4 py-2 text-sm text-ink-secondary hover:border-critical hover:text-critical sm:min-h-0"
+            >
+              サンプルに戻す
+            </button>
+          </div>
+          <div className="flex gap-2 sm:ml-auto sm:items-center">
+            <input
+              value={scenarioName}
+              onChange={(e) => setScenarioName(e.target.value)}
+              placeholder="シナリオ名(例: 転職した場合)"
+              aria-label="シナリオ名"
+              className="min-h-11 w-full min-w-0 rounded-sm border border-hairline-strong bg-surface px-3 py-1.5 text-base text-ink outline-none focus:border-amber-500 sm:min-h-0 sm:w-auto sm:text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => void handleSaveScenario()}
+              disabled={!scenarioName.trim()}
+              className="min-h-11 shrink-0 rounded-sm border border-hairline-strong px-4 py-2 text-sm text-ink-secondary hover:border-amber-500 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0"
+            >
+              シナリオとして保存
+            </button>
+          </div>
         </div>
       </div>
     </form>
