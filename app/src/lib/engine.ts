@@ -56,18 +56,46 @@ export function computeSimulation(input: SimulationInput): SimulationBundle {
   return { deterministic, monteCarlo, sensitivity };
 }
 
-/** Web Worker上で指定プロフィールのシミュレーションを実行し、メインスレッドをブロックしない */
-export function runSimulationInWorker(input: SimulationInput): Promise<SimulationBundle> {
+/** 計算が中止されたことを表すエラー。呼び出し側が失敗と区別するために使う。 */
+export class SimulationAbortedError extends Error {
+  constructor() {
+    super("シミュレーションを中止しました");
+    this.name = "SimulationAbortedError";
+  }
+}
+
+/**
+ * Web Worker上で指定プロフィールのシミュレーションを実行し、メインスレッドをブロックしない。
+ * `signal` を渡すと計算を中止できる。試行数によっては30秒近くかかるため、
+ * 待たされている間にユーザーが打ち切れる手段を用意する(Workerはterminateで即座に止まる)。
+ */
+export function runSimulationInWorker(input: SimulationInput, signal?: AbortSignal): Promise<SimulationBundle> {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted === true) {
+      reject(new SimulationAbortedError());
+      return;
+    }
+
     const worker = new SimulationWorker();
 
-    worker.onmessage = (event: MessageEvent<SimulationBundle>) => {
-      resolve(event.data);
+    const onAbort = (): void => {
+      worker.terminate();
+      reject(new SimulationAbortedError());
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+
+    const finish = (): void => {
+      signal?.removeEventListener("abort", onAbort);
       worker.terminate();
     };
+
+    worker.onmessage = (event: MessageEvent<SimulationBundle>) => {
+      finish();
+      resolve(event.data);
+    };
     worker.onerror = (event: ErrorEvent) => {
+      finish();
       reject(new Error(event.message || "シミュレーションWorkerでエラーが発生しました"));
-      worker.terminate();
     };
 
     worker.postMessage(input);

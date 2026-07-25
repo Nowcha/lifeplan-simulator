@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { rules, runSimulationInWorker, type SimulationBundle } from './lib/engine'
+import { useEffect, useRef, useState } from 'react'
+import { rules, runSimulationInWorker, SimulationAbortedError, type SimulationBundle } from './lib/engine'
 import { loadProfile, saveProfile, resetProfile, type EditableProfile } from './lib/profileStorage'
 import { sanitizeFormValue } from './lib/sanitizeFormValue'
 import { listScenarios, type Scenario } from './lib/scenarioStorage'
@@ -37,6 +37,11 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [scenarios, setScenarios] = useState<Scenario[]>(() => listScenarios())
   const [toast, setToast] = useState<string | null>(null)
+  const [aborted, setAborted] = useState(false)
+  const [runToken, setRunToken] = useState(0)
+  const abortRef = useRef<AbortController | null>(null)
+  /** 中止がユーザー操作によるものか(プロフィール変更に伴う自動中断と区別する) */
+  const abortRequestedRef = useRef(false)
 
   // 保存はダッシュボードへの遷移と再計算を伴うため、何が起きたのかを一言で返す
   useEffect(() => {
@@ -46,24 +51,41 @@ export default function App() {
   }, [toast])
 
   useEffect(() => {
-    let cancelled = false
+    const controller = new AbortController()
+    abortRef.current = controller
     setResult(null)
     setError(null)
+    setAborted(false)
 
     async function load(): Promise<void> {
       try {
-        const bundle = await runSimulationInWorker({ ...profile, rules })
-        if (!cancelled) setResult(bundle)
+        const bundle = await runSimulationInWorker({ ...profile, rules }, controller.signal)
+        setResult(bundle)
       } catch (err: unknown) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'シミュレーションの実行に失敗しました')
+        // プロフィール変更やアンマウントでの中断は、ユーザーの中止操作と区別して黙って捨てる
+        if (err instanceof SimulationAbortedError) {
+          if (abortRequestedRef.current) {
+            abortRequestedRef.current = false
+            setAborted(true)
+          }
+          return
+        }
+        setError(err instanceof Error ? err.message : 'シミュレーションの実行に失敗しました')
       }
     }
 
     void load()
-    return () => {
-      cancelled = true
-    }
-  }, [profile])
+    return () => controller.abort()
+  }, [profile, runToken])
+
+  function handleAbort(): void {
+    abortRequestedRef.current = true
+    abortRef.current?.abort()
+  }
+
+  function handleRerun(): void {
+    setRunToken((token) => token + 1)
+  }
 
   function handleApply(nextProfile: EditableProfile): void {
     const sanitized = sanitizeFormValue(nextProfile)
@@ -125,7 +147,9 @@ export default function App() {
           </div>
         )}
         {view === 'compare' && <ScenarioCompareView scenarios={scenarios} onScenariosChanged={refreshScenarios} />}
-        {view === 'dashboard' && <DashboardView result={result} error={error} />}
+        {view === 'dashboard' && (
+          <DashboardView result={result} error={error} aborted={aborted} onAbort={handleAbort} onRerun={handleRerun} />
+        )}
       </main>
 
       <Disclaimer />
@@ -193,7 +217,15 @@ function DashboardSummary({ result, pathCount }: { result: SimulationBundle; pat
   )
 }
 
-function DashboardView({ result, error }: { result: SimulationBundle | null; error: string | null }) {
+interface DashboardViewProps {
+  result: SimulationBundle | null
+  error: string | null
+  aborted: boolean
+  onAbort: () => void
+  onRerun: () => void
+}
+
+function DashboardView({ result, error, aborted, onAbort, onRerun }: DashboardViewProps) {
   if (error) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center text-ink-secondary">
@@ -202,7 +234,8 @@ function DashboardView({ result, error }: { result: SimulationBundle | null; err
     )
   }
 
-  if (!result) return <ComputingNotice />
+  if (aborted) return <AbortedNotice onRerun={onRerun} />
+  if (!result) return <ComputingNotice onAbort={onAbort} />
 
 
   const series = buildFanChartSeries(result)
@@ -260,7 +293,7 @@ function DashboardView({ result, error }: { result: SimulationBundle | null; err
  * 10,000パスのモンテカルロは環境によっては30秒近くかかる。無言で待たせると
  * 固まったのか進んでいるのか判断できないため、経過秒数を出して進行を示す。
  */
-function ComputingNotice() {
+function ComputingNotice({ onAbort }: { onAbort: () => void }) {
   const [seconds, setSeconds] = useState(0)
 
   useEffect(() => {
@@ -279,6 +312,29 @@ function ComputingNotice() {
       <p className="tabular text-xs text-ink-muted">
         経過 {seconds} 秒(試行数が多いほど時間がかかります。前提条件タブで調整できます)
       </p>
+      <button
+        type="button"
+        onClick={onAbort}
+        className="mt-2 min-h-11 rounded-sm border border-hairline-strong px-4 py-2 text-sm text-ink-secondary hover:border-critical hover:text-critical sm:min-h-0"
+      >
+        計算を中止
+      </button>
+    </div>
+  )
+}
+
+function AbortedNotice({ onRerun }: { onRerun: () => void }) {
+  return (
+    <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-center text-ink-secondary">
+      <p className="text-sm">計算を中止しました。</p>
+      <p className="text-xs text-ink-muted">試行数を減らすと短時間で終わります(「データ編集」→「前提条件」)。</p>
+      <button
+        type="button"
+        onClick={onRerun}
+        className="mt-2 min-h-11 rounded-sm bg-amber-500 px-5 py-2 text-sm font-medium text-white hover:bg-amber-700 sm:min-h-0"
+      >
+        もう一度計算する
+      </button>
     </div>
   )
 }
