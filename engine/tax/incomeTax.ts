@@ -1,11 +1,12 @@
 /**
  * National income tax for a salaried resident:
- * 合計所得 → 所得控除 (social insurance actual, iDeCo, basic, spouse)
+ * 合計所得 → 所得控除 (social insurance actual, iDeCo, basic, spouse, dependents)
  * → progressive brackets → 復興特別所得税 surtax → final 100-yen floor.
  */
 
 import type { IncomeTaxRules, Rate, Yen } from "../types/index.js";
 import { applyRate, floorTo, stepAmount } from "./rounding.js";
+import { dependentDeductionTotal } from "./dependents.js";
 
 export interface IncomeTaxInput {
   /** 合計所得金額 (Phase 1: salary income only) */
@@ -16,6 +17,8 @@ export interface IncomeTaxInput {
   idecoAnnual?: Yen;
   /** Spouse's 合計所得金額; undefined = no spouse */
   spouseTotalIncome?: Yen;
+  /** Ages (on Dec 31) of the dependents attributed to this taxpayer (扶養控除) */
+  dependentAges?: readonly number[];
   rules: IncomeTaxRules;
 }
 
@@ -31,6 +34,7 @@ export interface IncomeTaxResult {
     ideco: Yen;
     basic: Yen;
     spouse: Yen;
+    dependents: Yen;
     total: Yen;
   };
 }
@@ -41,12 +45,7 @@ export function spouseDeductionAmount(
   config: { spouseIncomeMax: Yen; steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[] }
 ): Yen {
   if (spouseTotalIncome === undefined || spouseTotalIncome > config.spouseIncomeMax) return 0;
-  for (const step of config.steps) {
-    if (step.ownerIncomeUpTo === null || ownerTotalIncome <= step.ownerIncomeUpTo) {
-      return step.amount;
-    }
-  }
-  return 0;
+  return stepAmount(config.steps, ownerTotalIncome);
 }
 
 export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxResult {
@@ -54,7 +53,8 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxResult {
   const ideco = input.idecoAnnual ?? 0;
   const basic = stepAmount(rules.basicDeduction.steps, totalIncome);
   const spouse = spouseDeductionAmount(totalIncome, input.spouseTotalIncome, rules.spouseDeduction);
-  const totalDeductions = socialInsurancePaid + ideco + basic + spouse;
+  const dependents = dependentDeductionTotal(input.dependentAges ?? [], rules.dependentDeduction);
+  const totalDeductions = socialInsurancePaid + ideco + basic + spouse + dependents;
 
   // 課税所得: floor to 1,000 yen
   const taxableIncome = floorTo(Math.max(0, totalIncome - totalDeductions), 1000);
@@ -76,6 +76,6 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxResult {
     taxableIncome,
     tax,
     marginalRate,
-    deductions: { socialInsurance: socialInsurancePaid, ideco, basic, spouse, total: totalDeductions }
+    deductions: { socialInsurance: socialInsurancePaid, ideco, basic, spouse, dependents, total: totalDeductions }
   };
 }

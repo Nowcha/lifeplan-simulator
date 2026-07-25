@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { FormProvider, useForm } from 'react-hook-form'
 import type { EditableProfile } from '../../lib/profileStorage'
 import { sanitizeFormValue } from '../../lib/sanitizeFormValue'
 import { saveScenario } from '../../lib/scenarioStorage'
+import { collectErrorPaths } from '../../lib/fieldError'
+import { summarizeErrorCategories } from '../../lib/errorSummary'
 import { HouseholdBasicsForm } from './HouseholdBasicsForm'
 import { HouseholdFinanceForm } from './HouseholdFinanceForm'
 import { EventsForm } from './EventsForm'
@@ -25,21 +27,26 @@ const CATEGORIES = [
 type Category = (typeof CATEGORIES)[number]['key']
 
 export function ProfileEditor({ initialProfile, onApply, onReset, onScenarioSaved }: ProfileEditorProps) {
-  const { control, register, setValue, handleSubmit, getValues } = useForm<EditableProfile>({
-    defaultValues: initialProfile
-  })
+  const form = useForm<EditableProfile>({ defaultValues: initialProfile })
+  const { control, register, setValue, handleSubmit, getValues, formState, trigger } = form
   const [scenarioName, setScenarioName] = useState('')
   const [category, setCategory] = useState<Category>('basics')
 
-  function handleSaveScenario(): void {
+  const errorPaths = collectErrorPaths(formState.errors)
+  const errorCategories = summarizeErrorCategories(errorPaths)
+
+  /** 不正な値のままシナリオを保存すると、比較実行時にエンジンが落ちるので先に検証する */
+  async function handleSaveScenario(): Promise<void> {
     const name = scenarioName.trim()
     if (!name) return
+    if (!(await trigger())) return
     saveScenario(name, sanitizeFormValue(getValues()))
     setScenarioName('')
     onScenarioSaved(name)
   }
 
   return (
+    <FormProvider {...form}>
     <form onSubmit={handleSubmit(onApply)}>
       <nav className="sticky top-0 z-10 -mx-6 flex gap-2 border-b border-hairline bg-page/95 px-6 py-3 backdrop-blur-sm">
         {CATEGORIES.map((c) => (
@@ -71,7 +78,28 @@ export function ProfileEditor({ initialProfile, onApply, onReset, onScenarioSave
         <AssumptionsForm control={control} register={register} setValue={setValue} />
       </div>
 
-      <div className="sticky bottom-0 mt-8 flex flex-wrap items-center gap-4 border-t border-hairline bg-page py-4">
+      <div className="sticky bottom-0 mt-8 border-t border-hairline bg-page py-4">
+        {errorCategories.length > 0 && (
+          <div role="alert" className="mb-3 rounded-sm border border-critical/40 bg-critical/5 px-4 py-3 text-sm">
+            <span className="text-critical">
+              入力に{errorPaths.length}件の問題があります。該当タブを開いて赤字の項目を直してください。
+            </span>
+            <span className="mt-2 flex flex-wrap gap-2">
+              {errorCategories.map(({ category: c, count }) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCategory(c)}
+                  className="rounded-sm border border-critical/40 px-2.5 py-1 text-xs text-critical hover:bg-critical/10"
+                >
+                  {CATEGORIES.find((x) => x.key === c)?.label}({count}件)
+                </button>
+              ))}
+            </span>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-4">
         <button type="submit" className="rounded-sm bg-amber-500 px-5 py-2 text-sm font-medium text-white hover:bg-amber-700">
           保存して再計算
         </button>
@@ -91,14 +119,16 @@ export function ProfileEditor({ initialProfile, onApply, onReset, onScenarioSave
           />
           <button
             type="button"
-            onClick={handleSaveScenario}
+            onClick={() => void handleSaveScenario()}
             disabled={!scenarioName.trim()}
             className="rounded-sm border border-hairline-strong px-4 py-2 text-sm text-ink-secondary hover:border-amber-500 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             シナリオとして保存
           </button>
         </div>
+        </div>
       </div>
     </form>
+    </FormProvider>
   )
 }

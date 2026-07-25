@@ -1,4 +1,6 @@
 import { forwardRef, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
+import { useFormState } from 'react-hook-form'
+import { fieldErrorMessage } from '../../lib/fieldError'
 
 interface FieldProps {
   label: string
@@ -6,10 +8,15 @@ interface FieldProps {
   error?: string
   /** ラベル横に "?" アイコンを出し、クリックで補足説明を表示する */
   help?: string
+  /**
+   * register() が展開する name。渡すと、そのフィールドのバリデーションエラーを
+   * FormProvider から自分で取りに行く(呼び出し側でerrorsを配線しなくてよい)。
+   */
+  name?: string
   children: ReactNode
 }
 
-export function Field({ label, hint, error, help, children }: FieldProps) {
+export function Field({ label, hint, error, help, name, children }: FieldProps) {
   return (
     <label className="flex flex-col gap-1 text-sm">
       <span className="flex items-center gap-1.5 text-ink-secondary">
@@ -17,10 +24,26 @@ export function Field({ label, hint, error, help, children }: FieldProps) {
         {help && <HelpBadge text={help} />}
       </span>
       {children}
-      {hint && !error && <span className="text-xs text-ink-muted">{hint}</span>}
-      {error && <span className="text-xs text-critical">{error}</span>}
+      {/* name の有無でフックの呼び出し有無が変わらないよう、別コンポーネントに分ける */}
+      {name === undefined ? (
+        <FieldFeedback hint={hint} error={error} />
+      ) : (
+        <BoundFieldFeedback name={name} hint={hint} error={error} />
+      )}
     </label>
   )
+}
+
+function FieldFeedback({ hint, error }: { hint?: string; error?: string }) {
+  if (error !== undefined) return <span className="text-xs text-critical">{error}</span>
+  if (hint !== undefined) return <span className="text-xs text-ink-muted">{hint}</span>
+  return null
+}
+
+/** フォーム状態から自分のエラーだけを購読する(name指定なので他フィールドの変化では再描画されない) */
+function BoundFieldFeedback({ name, hint, error }: { name: string; hint?: string; error?: string }) {
+  const { errors } = useFormState({ name: name as never })
+  return <FieldFeedback hint={hint} error={error ?? fieldErrorMessage(errors, name)} />
 }
 
 export function HelpBadge({ text }: { text: string }) {
@@ -69,7 +92,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
   ref
 ) {
   return (
-    <Field label={label} hint={hint} error={error} help={help}>
+    <Field label={label} hint={hint} error={error} help={help} name={props.name}>
       <input ref={ref} className={`${inputClass} ${className ?? ''}`} {...props} />
     </Field>
   )
@@ -88,7 +111,7 @@ export const MonthInput = forwardRef<HTMLInputElement, MonthInputProps>(function
   ref
 ) {
   return (
-    <Field label={label} hint={hint} error={error} help={help}>
+    <Field label={label} hint={hint} error={error} help={help} name={props.name}>
       <input ref={ref} type="month" className={`${inputClass} ${className ?? ''}`} {...props} />
     </Field>
   )
@@ -107,7 +130,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
   ref
 ) {
   return (
-    <Field label={label} hint={hint} error={error} help={help}>
+    <Field label={label} hint={hint} error={error} help={help} name={props.name}>
       <div className="flex items-center gap-2">
         <input ref={ref} type="number" className={`${inputClass} ${className ?? ''}`} {...props} />
         {suffix && <span className="shrink-0 text-xs text-ink-muted">{suffix}</span>}
@@ -129,7 +152,7 @@ export const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(funct
   ref
 ) {
   return (
-    <Field label={label} hint={hint} error={error} help={help}>
+    <Field label={label} hint={hint} error={error} help={help} name={props.name}>
       <select ref={ref} className={`${inputClass} ${className ?? ''}`} {...props}>
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>

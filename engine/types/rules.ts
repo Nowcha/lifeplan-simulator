@@ -51,6 +51,7 @@ export interface IncomeTaxRules {
     steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[];
     _source: RuleSource;
   };
+  dependentDeduction: DependentDeductionRules;
   /** 復興特別所得税 (0.021). From 2027 this bucket represents 復興1.1% + 防衛1% (total unchanged). */
   reconstructionSurtax: Rate;
   _source: RuleSource;
@@ -70,7 +71,15 @@ export interface ResidentTaxRules {
   /** 調整控除 (personal-deduction gap credit) */
   adjustmentCredit: {
     basicDeductionGap: Yen;
-    spouseDeductionGap: Yen;
+    /**
+     * 配偶者控除の人的控除額の差 (所得税38/26/13万 − 住民税33/22/11万) は
+     * 納税者本人の合計所得金額で段階的に 5万/4万/2万 と変わる。
+     * ステップは `spouseDeduction.steps` と同じ境界だが金額だけが異なる。
+     */
+    spouseDeductionGap: { steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[] };
+    /** 人的控除額の差 per dependent: 一般 5万 (38万-33万) / 特定 18万 (63万-45万) */
+    generalDependentGap: Yen;
+    specificDependentGap: Yen;
     threshold: Yen;
     rateCity: Rate;
     ratePref: Rate;
@@ -78,9 +87,36 @@ export interface ResidentTaxRules {
     /** No credit above this 合計所得金額 */
     incomeLimit: Yen;
   };
-  /** Non-taxation threshold for a single filer (Phase 1 simplification) */
-  nonTaxableIncomeSingle: Yen;
+  dependentDeduction: DependentDeductionRules;
+  /**
+   * 非課税限度額 (Tokyo 23 wards = 生活保護法1級地). Threshold is
+   * `perPerson * headcount + base`, plus `addPerCapita` / `addIncomeLevy`
+   * when the household has at least one dependent. Headcount is
+   * self + 同一生計配偶者 + 扶養親族 (see design doc §8 4-1).
+   */
+  nonTaxable: {
+    perPerson: Yen;
+    base: Yen;
+    addPerCapita: Yen;
+    addIncomeLevy: Yen;
+  };
   _source: RuleSource;
+}
+
+/**
+ * 扶養控除. Amounts differ between income tax and resident tax; the age
+ * brackets are shared. 老人扶養親族/同居老親等 are out of scope — the household
+ * model has no elderly dependents (design doc §8 4-1).
+ */
+export interface DependentDeductionRules {
+  /** Minimum age (as of Dec 31) to qualify at all — 年少扶養親族 get no deduction */
+  minAge: number;
+  /** 特定扶養親族 age range, both bounds inclusive */
+  specificFromAge: number;
+  specificToAge: number;
+  general: Yen;
+  specific: Yen;
+  _source?: RuleSource;
 }
 
 export interface SocialInsuranceRules {

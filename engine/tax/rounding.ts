@@ -28,13 +28,24 @@ export function floorTo(value: number, unit: number): Yen {
 }
 
 /**
- * Look up the amount for an income-indexed step ladder (e.g. 基礎控除,
- * 配偶者控除 tables): returns the amount for the first step whose
- * `incomeUpTo` is null (no upper bound) or >= income.
+ * One rung of an income-indexed step ladder. Tables indexed on the taxpayer's
+ * own 合計所得金額 while *also* involving a second person's income (配偶者控除 and
+ * its 調整控除 gap) name the bound `ownerIncomeUpTo` so the reader cannot mistake
+ * it for the spouse's income; single-income tables (基礎控除) use `incomeUpTo`.
  */
-export function stepAmount(steps: { incomeUpTo: Yen | null; amount: Yen }[], income: Yen): Yen {
+export type IncomeStep =
+  | { incomeUpTo: Yen | null; amount: Yen }
+  | { ownerIncomeUpTo: Yen | null; amount: Yen };
+
+/**
+ * Look up the amount for an income-indexed step ladder (e.g. 基礎控除,
+ * 配偶者控除 tables): returns the amount for the first step whose upper bound
+ * is null (no upper bound) or >= income, and 0 if no step matches.
+ */
+export function stepAmount(steps: readonly IncomeStep[], income: Yen): Yen {
   for (const step of steps) {
-    if (step.incomeUpTo === null || income <= step.incomeUpTo) return step.amount;
+    const upTo = "incomeUpTo" in step ? step.incomeUpTo : step.ownerIncomeUpTo;
+    if (upTo === null || income <= upTo) return step.amount;
   }
   return 0;
 }

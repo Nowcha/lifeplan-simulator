@@ -1,6 +1,7 @@
 import { useFieldArray, type Control, type UseFormRegister } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput } from '../form/fields'
+import { numberRules, optionalNumberRules, yearMonthRules } from '../../lib/validation'
 import {
   EMPLOYMENT_TYPE_HELP,
   EMPLOYMENT_TYPE_OPTIONS,
@@ -24,8 +25,12 @@ export function PersonForm({ index, control, register, onRemove }: PersonFormPro
   return (
     <ItemCard title={`本人${index + 1}`} onRemove={onRemove}>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <MonthInput label="生年月" {...register(`${path}.birthYearMonth`)} />
-        <NumberInput label="退職年齢" suffix="歳" {...register(`${path}.retirementAge`, { valueAsNumber: true })} />
+        <MonthInput label="生年月" {...register(`${path}.birthYearMonth`, yearMonthRules)} />
+        <NumberInput
+          label="退職年齢"
+          suffix="歳"
+          {...register(`${path}.retirementAge`, numberRules({ min: 0, max: 120, integer: true }))}
+        />
         <SelectInput
           label="就業形態"
           help={EMPLOYMENT_TYPE_HELP}
@@ -42,18 +47,22 @@ export function PersonForm({ index, control, register, onRemove }: PersonFormPro
           label="組合健保 労使折半率(任意)"
           hint="healthInsurance=組合健保のときのみ使用"
           step="0.001"
-          {...register(`${path}.employment.kumiaiRate`, { valueAsNumber: true })}
+          {...register(`${path}.employment.kumiaiRate`, optionalNumberRules({ min: 0, max: 1 }))}
         />
-        <NumberInput label="退職金(任意)" suffix="円" {...register(`${path}.retirementLumpSum`, { valueAsNumber: true })} />
+        <NumberInput
+          label="退職金(任意)"
+          suffix="円"
+          {...register(`${path}.retirementLumpSum`, optionalNumberRules({ min: 0 }))}
+        />
         <NumberInput
           label="iDeCo月額(任意)"
           suffix="円"
-          {...register(`${path}.deductions.idecoMonthly`, { valueAsNumber: true })}
+          {...register(`${path}.deductions.idecoMonthly`, optionalNumberRules({ min: 0 }))}
         />
         <NumberInput
           label="生命保険料(年額・任意)"
           suffix="円"
-          {...register(`${path}.deductions.lifeInsurancePremiumAnnual`, { valueAsNumber: true })}
+          {...register(`${path}.deductions.lifeInsurancePremiumAnnual`, optionalNumberRules({ min: 0 }))}
         />
       </div>
 
@@ -65,17 +74,17 @@ export function PersonForm({ index, control, register, onRemove }: PersonFormPro
               <NumberInput
                 label="年齢"
                 suffix="歳"
-                {...register(`${path}.incomeCurve.${curveIndex}.age`, { valueAsNumber: true })}
+                {...register(`${path}.incomeCurve.${curveIndex}.age`, numberRules({ min: 0, max: 120, integer: true }))}
               />
               <NumberInput
                 label="月額基本給"
                 suffix="円"
-                {...register(`${path}.incomeCurve.${curveIndex}.monthlyBase`, { valueAsNumber: true })}
+                {...register(`${path}.incomeCurve.${curveIndex}.monthlyBase`, numberRules({ min: 0 }))}
               />
               <NumberInput
                 label="年間賞与"
                 suffix="円"
-                {...register(`${path}.incomeCurve.${curveIndex}.bonusAnnual`, { valueAsNumber: true })}
+                {...register(`${path}.incomeCurve.${curveIndex}.bonusAnnual`, numberRules({ min: 0 }))}
               />
               <SelectInput
                 label="改定方法"

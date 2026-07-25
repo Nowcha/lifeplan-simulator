@@ -492,6 +492,17 @@ export function runDeterministic(
       ...annualChildBenefits(children, household.municipality, year, rules.childBenefits)
     ];
 
+    // 扶養親族の帰属: 累進課税なので、その年の合計所得が最も高い人物に子を全員
+    // 寄せると世帯の税額が最小になる(設計書§8 4-1)。同額なら persons の先頭。
+    const dependentClaimantId = household.persons.reduce<string | undefined>((best, p) => {
+      if (best === undefined) return p.id;
+      return (totalIncomeById.get(p.id) ?? 0) > (totalIncomeById.get(best) ?? 0) ? p.id : best;
+    }, undefined);
+    // 出生前の子は age < 0 になるので除外する(その年はまだ扶養親族ではない)
+    const dependentAges = children
+      .map((c) => ageInYear(c.birthYearMonth, year))
+      .filter((age) => age >= 0);
+
     // Step 4-5: income tax and resident tax per person
     const appliedHousingCreditByPerson = new Map<string, Yen>();
     const newHousingSpilloverByPerson = new Map<string, Yen>();
@@ -509,7 +520,8 @@ export function runDeterministic(
       const taxInputBase = {
         totalIncome,
         socialInsurancePaid: g.socialInsurance,
-        idecoAnnual
+        idecoAnnual,
+        dependentAges: person.id === dependentClaimantId ? dependentAges : []
       };
       const incomeTax = computeIncomeTax(
         spouseTotalIncome !== undefined

@@ -68,6 +68,18 @@
         { "ownerIncomeUpTo": null, "amount": 0 }
       ]
     },
+    "dependentDeduction": {
+      "_source": {
+        "url": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1180.htm",
+        "confirmedOn": "2026-07-25",
+        "note": "国税庁タックスアンサーNo.1180 扶養控除: 控除対象扶養親族はその年12月31日現在16歳以上。一般38万円、特定扶養親族(19歳以上23歳未満)63万円。老人扶養親族48万円/同居老親等58万円は本エンジンのスコープ外(設計書§8 4-1)。扶養親族の合計所得金額要件は令和8年分から62万円以下(令和7年分58万円)だが、子に所得を持たせるモデルが無いため判定は常に成立する: https://www.nta.go.jp/users/gensen/2026kiso/pdf/0026005-024.pdf"
+      },
+      "minAge": 16,
+      "specificFromAge": 19,
+      "specificToAge": 22,
+      "general": 380000,
+      "specific": 630000
+    },
     "reconstructionSurtax": 0.021
   },
   "residentTax": {
@@ -97,15 +109,51 @@
       ]
     },
     "adjustmentCredit": {
+      "_source": {
+        "url": "https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/zeikoujo.html",
+        "confirmedOn": "2026-07-25",
+        "note": "江東区・税額控除の種類(調整控除の人的控除額の差): 基礎控除5万円、配偶者控除は本人の合計所得金額により5万円(900万円以下)/4万円(900万円超950万円以下)/2万円(950万円超1,000万円以下)、扶養控除は一般5万円(38万-33万)・特定18万円(63万-45万)。老人10万円・同居老親13万円はスコープ外。配偶者特別控除は適用無。合計課税所得200万円以下は差額と課税所得の少ない方の5%(都2%+区3%)、200万円超は{差額-(課税所得-200万)}の5%で最低2,500円"
+      },
       "basicDeductionGap": 50000,
-      "spouseDeductionGap": 50000,
+      "spouseDeductionGap": {
+        "steps": [
+          { "ownerIncomeUpTo": 9000000, "amount": 50000 },
+          { "ownerIncomeUpTo": 9500000, "amount": 40000 },
+          { "ownerIncomeUpTo": 10000000, "amount": 20000 },
+          { "ownerIncomeUpTo": null, "amount": 0 }
+        ]
+      },
+      "generalDependentGap": 50000,
+      "specificDependentGap": 180000,
       "threshold": 2000000,
       "rateCity": 0.03,
       "ratePref": 0.02,
       "minimum": 2500,
       "incomeLimit": 25000000
     },
-    "nonTaxableIncomeSingle": 450000
+    "dependentDeduction": {
+      "_source": {
+        "url": "https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/5105.html",
+        "confirmedOn": "2026-07-25",
+        "note": "江東区・所得控除の種類(令和8年度以降): 扶養控除は16歳未満=適用なし、一般(16〜19歳未満・23〜70歳未満)33万円、特定(19〜23歳未満)45万円。老人扶養38万円/同居老親45万円はスコープ外(設計書§8 4-1)。年少扶養親族は控除対象外だが非課税限度額の判定には算入する"
+      },
+      "minAge": 16,
+      "specificFromAge": 19,
+      "specificToAge": 22,
+      "general": 330000,
+      "specific": 450000
+    },
+    "nonTaxable": {
+      "_source": {
+        "url": "https://www.tax.metro.tokyo.lg.jp/kazei/life/kojin_ju",
+        "confirmedOn": "2026-07-25",
+        "note": "東京都主税局・個人住民税(東京23区=生活保護法の1級地): 均等割・所得割とも非課税=合計所得金額が「35万円×(本人・同一生計配偶者・扶養親族の合計人数)+31万円」以下(扶養親族がいない場合は45万円以下)。所得割のみ非課税=「35万円×同人数+42万円」以下(同45万円以下)。31万=10万+21万、42万=10万+32万に分解している。判定上の扶養親族は16歳未満の者および控除対象扶養親族に限る"
+      },
+      "perPerson": 350000,
+      "base": 100000,
+      "addPerCapita": 210000,
+      "addIncomeLevy": 320000
+    }
   },
   "socialInsurance": {
     "_source": {

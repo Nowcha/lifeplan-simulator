@@ -2,6 +2,7 @@ import { useFieldArray, useWatch, type Control, type UseFormRegister, type UseFo
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { AddButton, HelpBadge, ItemCard, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
 import { BASE_RATE_MODEL_HELP, BASE_RATE_MODEL_OPTIONS } from '../../lib/formOptions'
+import { numberRules, requiredTextRules } from '../../lib/validation'
 
 /** engine/montecarlo/paths.ts の BASE_RATE_FACTOR_ID と一致させる固定値。変更すると相関構造が壊れる。 */
 const BASE_RATE_FACTOR_ID = 'base-rate'
@@ -27,19 +28,19 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
     <div>
       <Section title="シミュレーション条件">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <NumberInput label="開始年" {...register('assumptions.simulation.startYear', { valueAsNumber: true })} />
-          <NumberInput label="終了年齢(最年長者基準)" suffix="歳" {...register('assumptions.simulation.endAge', { valueAsNumber: true })} />
-          <NumberInput label="モンテカルロ試行数" hint="多いほど精度は上がるが計算時間も増える" {...register('assumptions.simulation.paths', { valueAsNumber: true })} />
-          <NumberInput label="乱数シード" hint="同じ値なら毎回同じ結果を再現" {...register('assumptions.simulation.seed', { valueAsNumber: true })} />
+          <NumberInput label="開始年" {...register('assumptions.simulation.startYear', numberRules({ min: 1900, max: 2200, integer: true }))} />
+          <NumberInput label="終了年齢(最年長者基準)" suffix="歳" {...register('assumptions.simulation.endAge', numberRules({ min: 0, max: 120, integer: true }))} />
+          <NumberInput label="モンテカルロ試行数" hint="多いほど精度は上がるが計算時間も増える" {...register('assumptions.simulation.paths', numberRules({ min: 1, integer: true }))} />
+          <NumberInput label="乱数シード" hint="同じ値なら毎回同じ結果を再現" {...register('assumptions.simulation.seed', numberRules({ integer: true }))} />
         </div>
       </Section>
 
       <Section title="インフレ・賃金上昇率" note="平均(mean)と年率のばらつき(volatility)を小数で指定(0.02 = 年2%)。">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <NumberInput label="インフレ率(平均)" step="0.001" {...register('assumptions.inflation.mean', { valueAsNumber: true })} />
-          <NumberInput label="インフレ率(変動)" step="0.001" {...register('assumptions.inflation.volatility', { valueAsNumber: true })} />
-          <NumberInput label="賃金上昇率(平均)" step="0.001" {...register('assumptions.wageGrowth.mean', { valueAsNumber: true })} />
-          <NumberInput label="賃金上昇率(変動)" step="0.001" {...register('assumptions.wageGrowth.volatility', { valueAsNumber: true })} />
+          <NumberInput label="インフレ率(平均)" step="0.001" {...register('assumptions.inflation.mean', numberRules())} />
+          <NumberInput label="インフレ率(変動)" step="0.001" {...register('assumptions.inflation.volatility', numberRules({ min: 0 }))} />
+          <NumberInput label="賃金上昇率(平均)" step="0.001" {...register('assumptions.wageGrowth.mean', numberRules())} />
+          <NumberInput label="賃金上昇率(変動)" step="0.001" {...register('assumptions.wageGrowth.volatility', numberRules({ min: 0 }))} />
         </div>
       </Section>
 
@@ -60,10 +61,10 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
                 <TextInput
                   label="名前"
                   hint="保有資産・積立配分から選べるようになる呼び名"
-                  {...register(`assumptions.assetClasses.${index}.id`)}
+                  {...register(`assumptions.assetClasses.${index}.id`, requiredTextRules)}
                 />
-                <NumberInput label="期待リターン(年率)" step="0.001" {...register(`assumptions.assetClasses.${index}.expectedReturn`, { valueAsNumber: true })} />
-                <NumberInput label="ボラティリティ(年率)" step="0.001" {...register(`assumptions.assetClasses.${index}.volatility`, { valueAsNumber: true })} />
+                <NumberInput label="期待リターン(年率)" step="0.001" {...register(`assumptions.assetClasses.${index}.expectedReturn`, numberRules())} />
+                <NumberInput label="ボラティリティ(年率)" step="0.001" {...register(`assumptions.assetClasses.${index}.volatility`, numberRules({ min: 0 }))} />
               </div>
             </ItemCard>
           ))}
@@ -74,7 +75,7 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
 
       <Section title="住宅ローン基準金利">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <NumberInput label="初期値" step="0.001" {...register('assumptions.baseRate.initial', { valueAsNumber: true })} />
+          <NumberInput label="初期値" step="0.001" {...register('assumptions.baseRate.initial', numberRules())} />
           <SelectInput
             label="モデル"
             help={BASE_RATE_MODEL_HELP}
@@ -85,9 +86,9 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
 
         {baseRateModel === 'mean-reverting' && (
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <NumberInput label="回帰速度" step="0.001" {...register('assumptions.baseRate.meanReversion.speed', { valueAsNumber: true })} />
-            <NumberInput label="長期平均" step="0.001" {...register('assumptions.baseRate.meanReversion.longTermMean', { valueAsNumber: true })} />
-            <NumberInput label="ボラティリティ" step="0.001" {...register('assumptions.baseRate.meanReversion.volatility', { valueAsNumber: true })} />
+            <NumberInput label="回帰速度" step="0.001" {...register('assumptions.baseRate.meanReversion.speed', numberRules({ min: 0 }))} />
+            <NumberInput label="長期平均" step="0.001" {...register('assumptions.baseRate.meanReversion.longTermMean', numberRules())} />
+            <NumberInput label="ボラティリティ" step="0.001" {...register('assumptions.baseRate.meanReversion.volatility', numberRules({ min: 0 }))} />
           </div>
         )}
 
@@ -100,8 +101,8 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
             <div className="flex flex-col gap-2">
               {manualPath.fields.map((field, index) => (
                 <div key={field.id} className="grid grid-cols-2 items-end gap-3 sm:grid-cols-3">
-                  <NumberInput label="年" {...register(`assumptions.baseRate.manualPath.${index}.year`, { valueAsNumber: true })} />
-                  <NumberInput label="金利" step="0.001" {...register(`assumptions.baseRate.manualPath.${index}.rate`, { valueAsNumber: true })} />
+                  <NumberInput label="年" {...register(`assumptions.baseRate.manualPath.${index}.year`, numberRules({ min: 1900, max: 2200, integer: true }))} />
+                  <NumberInput label="金利" step="0.001" {...register(`assumptions.baseRate.manualPath.${index}.rate`, numberRules())} />
                   <button
                     type="button"
                     onClick={() => manualPath.remove(index)}
