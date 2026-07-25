@@ -16,15 +16,16 @@ interface PersonFormProps {
   control: Control<ProfileFormValues>
   register: UseFormRegister<ProfileFormValues>
   onRemove: () => void
+  getRemoveWarning?: () => string | undefined
 }
 
-export function PersonForm({ index, control, register, onRemove }: PersonFormProps) {
+export function PersonForm({ index, control, register, onRemove, getRemoveWarning }: PersonFormProps) {
   const path = `household.persons.${index}` as const
   const curve = useFieldArray({ control, name: `household.persons.${index}.incomeCurve` })
 
   return (
-    <ItemCard title={`本人${index + 1}`} onRemove={onRemove}>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+    <ItemCard title={`本人${index + 1}`} onRemove={onRemove} getRemoveWarning={getRemoveWarning}>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MonthInput label="生年月" {...register(`${path}.birthYearMonth`, yearMonthRules)} />
         <NumberInput
           label="退職年齢"
@@ -70,7 +71,7 @@ export function PersonForm({ index, control, register, onRemove }: PersonFormPro
         <h5 className="mb-2 text-xs tracking-wide text-ink-muted uppercase">収入カーブ(年齢ごとの内挿ポイント)</h5>
         <div className="flex flex-col gap-3">
           {curve.fields.map((field, curveIndex) => (
-            <div key={field.id} className="grid grid-cols-2 items-end gap-3 sm:grid-cols-5">
+            <div key={field.id} className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <NumberInput
                 label="年齢"
                 suffix="歳"

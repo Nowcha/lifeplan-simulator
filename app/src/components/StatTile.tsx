@@ -10,7 +10,7 @@ export function StatTile({ label, value, detail, tone = 'default' }: StatTilePro
     <div className="flex flex-col gap-1.5 border-t-2 border-ink pt-3">
       <span className="text-xs tracking-wide text-ink-muted uppercase">{label}</span>
       <span
-        className={`tabular text-3xl font-medium leading-none ${
+        className={`tabular text-2xl font-medium leading-none sm:text-3xl ${
           tone === 'critical' ? 'text-critical' : 'text-ink'
         }`}
       >

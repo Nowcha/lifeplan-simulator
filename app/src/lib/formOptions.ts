@@ -1,4 +1,5 @@
 /** プロフィール編集フォーム用の選択肢ラベル定義。engine/types の union値と1:1対応する。 */
+import { rules } from './engine'
 
 export const INDEXATION_OPTIONS = [
   { value: 'fixed', label: '固定(据え置き)' },
@@ -165,3 +166,26 @@ export const BASE_RATE_MODEL_OPTIONS = [
 
 export const BASE_RATE_MODEL_HELP =
   '住宅ローン基準金利の将来推移の与え方。手動パス指定=年ごとの金利を自分で指定し、全試行で同じ値を使う。平均回帰モデル=長期平均に向かって確率的に変動する統計モデルで、モンテカルロの試行ごとに金利も変動する。'
+
+/**
+ * 自治体独自給付は rules.childBenefits.municipal のキーで引く。以前は生のキーを
+ * テキスト入力させていたが、有効な値は rules に載っている自治体だけなので選択式にする。
+ * 表示名はここで対応付け、未知のキーはそのまま出す(rules追加時に落とさないため)。
+ */
+const MUNICIPALITY_LABELS: Record<string, string> = {
+  'koto-ku': '東京都 江東区'
+}
+
+/** rules に自治体独自給付が無い場合に選ぶ値。エンジンは未知のキーを「給付なし」として扱う。 */
+export const MUNICIPALITY_OTHER = 'other'
+
+export const MUNICIPALITY_HELP =
+  '児童手当・018サポートに加えて、自治体独自の子育て給付を計上するかどうかが変わる。一覧に無い自治体は「その他」を選ぶ(自治体独自給付は0円として計算され、国と東京都の給付は住所によらず計上される)。'
+
+export function municipalityOptions(): { value: string; label: string }[] {
+  const keys = Object.keys(rules.childBenefits?.municipal ?? {})
+  return [
+    ...keys.map((key) => ({ value: key, label: MUNICIPALITY_LABELS[key] ?? key })),
+    { value: MUNICIPALITY_OTHER, label: 'その他(自治体独自給付なし)' }
+  ]
+}
