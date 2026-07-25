@@ -25,7 +25,9 @@ function writeScenarios(scenarios: Scenario[]): void {
 
 export function saveScenario(name: string, profile: EditableProfile): Scenario {
   const scenarios = listScenarios()
-  const scenario: Scenario = { id: `scenario-${Date.now()}`, name, profile: structuredClone(profile) }
+  // Date.now() ベースのIDは同一ミリ秒内の連続保存で衝突し、削除時に別シナリオまで
+  // 巻き込むため使わない。randomUUIDはhttps/localhost(=本番Pagesとdev)で利用できる。
+  const scenario: Scenario = { id: `scenario-${crypto.randomUUID()}`, name, profile: structuredClone(profile) }
   writeScenarios([...scenarios, scenario])
   return scenario
 }
