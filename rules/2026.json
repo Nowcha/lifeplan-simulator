@@ -117,10 +117,10 @@
       "basicDeductionGap": 50000,
       "spouseDeductionGap": {
         "steps": [
-          { "incomeUpTo": 9000000, "amount": 50000 },
-          { "incomeUpTo": 9500000, "amount": 40000 },
-          { "incomeUpTo": 10000000, "amount": 20000 },
-          { "incomeUpTo": null, "amount": 0 }
+          { "ownerIncomeUpTo": 9000000, "amount": 50000 },
+          { "ownerIncomeUpTo": 9500000, "amount": 40000 },
+          { "ownerIncomeUpTo": 10000000, "amount": 20000 },
+          { "ownerIncomeUpTo": null, "amount": 0 }
         ]
       },
       "generalDependentGap": 50000,
