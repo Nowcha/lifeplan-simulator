@@ -1,0 +1,57 @@
+name: CI
+
+# PRとmainへのpushの両方で回す。このリポジトリはPRマージと直接pushの
+# 両方を使うため、どちらの経路でも壊れた状態が入ったことに気づけるようにする。
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 同じブランチで新しいpushがあれば古い実行は打ち切る
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # エンジン(リポジトリルートのパッケージ)。税・社保・給付・ローンのロジック本体。
+  engine:
+    name: engine
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+      # npm install ではなく npm ci。ロックファイルとpackage.jsonの不整合は
+      # npm install だと素通りし npm ci だけが落ちるため、ここで検出させる。
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+  # UI。ルートとは別パッケージなので lockfile もキャッシュも別に持つ。
+  app:
+    name: app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+        working-directory: app
+      - run: npm run lint
+        working-directory: app
+      - run: npm test
+        working-directory: app
+      # build は `tsc -b && vite build`。型検査を兼ねるので typecheck は別途走らせない。
+      - run: npm run build
+        working-directory: app
