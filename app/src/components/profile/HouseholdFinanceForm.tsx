@@ -3,6 +3,7 @@ import type { ProfileFormValues } from '../../lib/profileStorage'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, HelpBadge, ItemCard, MonthInput, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
 import { AssetClassPicker } from './pickers'
+import { numberRules, optionalNumberRules, optionalYearMonthRules, requiredTextRules } from '../../lib/validation'
 import {
   ACCOUNT_TYPE_HELP,
   ACCOUNT_TYPE_OPTIONS,
@@ -47,8 +48,12 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
           {baseExpenses.fields.map((field, index) => (
             <ItemCard key={field.id} title={`費目${index + 1}`} onRemove={() => baseExpenses.remove(index)}>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <TextInput label="項目名" {...register(`household.baseExpenses.${index}.label`)} />
-                <NumberInput label="月額" suffix="円" {...register(`household.baseExpenses.${index}.monthly`, { valueAsNumber: true })} />
+                <TextInput label="項目名" {...register(`household.baseExpenses.${index}.label`, requiredTextRules)} />
+                <NumberInput
+                  label="月額"
+                  suffix="円"
+                  {...register(`household.baseExpenses.${index}.monthly`, numberRules({ min: 0 }))}
+                />
                 <SelectInput
                   label="改定方法"
                   help={INDEXATION_HELP}
@@ -57,11 +62,11 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
                 />
                 <MonthInput
                   label="開始年月(任意)"
-                  {...register(`household.baseExpenses.${index}.activeFrom`)}
+                  {...register(`household.baseExpenses.${index}.activeFrom`, optionalYearMonthRules)}
                 />
                 <MonthInput
                   label="終了年月(任意)"
-                  {...register(`household.baseExpenses.${index}.activeTo`)}
+                  {...register(`household.baseExpenses.${index}.activeTo`, optionalYearMonthRules)}
                 />
               </div>
             </ItemCard>
@@ -97,12 +102,20 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
                   options={[...ACCOUNT_TYPE_OPTIONS]}
                   {...register(`household.financialAssets.${index}.account`)}
                 />
-                <NumberInput label="残高" suffix="円" {...register(`household.financialAssets.${index}.balance`, { valueAsNumber: true })} />
-                <NumberInput label="取得原価" suffix="円" {...register(`household.financialAssets.${index}.costBasis`, { valueAsNumber: true })} />
+                <NumberInput
+                  label="残高"
+                  suffix="円"
+                  {...register(`household.financialAssets.${index}.balance`, numberRules({ min: 0 }))}
+                />
+                <NumberInput
+                  label="取得原価"
+                  suffix="円"
+                  {...register(`household.financialAssets.${index}.costBasis`, numberRules({ min: 0 }))}
+                />
                 <NumberInput
                   label="NISA生涯枠消化額(任意)"
                   suffix="円"
-                  {...register(`household.financialAssets.${index}.nisaLifetimeUsed`, { valueAsNumber: true })}
+                  {...register(`household.financialAssets.${index}.nisaLifetimeUsed`, optionalNumberRules({ min: 0 }))}
                 />
               </div>
             </ItemCard>
@@ -115,7 +128,7 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
           <NumberInput
             label="生活防衛資金"
             suffix="か月分"
-            {...register('household.savingsPolicy.cashBufferMonths', { valueAsNumber: true })}
+            {...register('household.savingsPolicy.cashBufferMonths', numberRules({ min: 0 }))}
           />
 
           <div>
@@ -139,7 +152,7 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
                     <NumberInput
                       label="月額上限"
                       suffix="円"
-                      {...register(`household.savingsPolicy.contributions.${index}.monthlyCap`, { valueAsNumber: true })}
+                      {...register(`household.savingsPolicy.contributions.${index}.monthlyCap`, numberRules({ min: 0 }))}
                     />
                     <AssetClassPicker
                       control={control}
@@ -165,7 +178,7 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
                 label="金額 / 率"
                 hint="定額=円、定率=0.04など小数"
                 step="any"
-                {...register('household.savingsPolicy.drawdown.value', { valueAsNumber: true })}
+                {...register('household.savingsPolicy.drawdown.value', numberRules({ min: 0 }))}
               />
             </div>
             <div className="mt-3">

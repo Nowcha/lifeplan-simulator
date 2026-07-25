@@ -15,6 +15,13 @@ import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput, TextInput } from '../form/fields'
 import { ChildPicker, LoanPicker, PersonPicker } from './pickers'
 import {
+  numberRules,
+  optionalNumberRules,
+  optionalYearMonthRules,
+  requiredTextRules,
+  yearMonthRules
+} from '../../lib/validation'
+import {
   GROUP_CREDIT_LIFE_HELP,
   GROUP_CREDIT_LIFE_OPTIONS,
   INDEXATION_HELP,
@@ -52,9 +59,9 @@ export function ChildbirthEventFields({ index, control, register }: EventFieldsP
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <MonthInput label="出産予定年月" {...register(eventPath(index, 'expectedYearMonth'))} />
+        <MonthInput label="出産予定年月" {...register(eventPath(index, 'expectedYearMonth'), yearMonthRules)} />
         <ChildPicker control={control} label="対象の子ども" {...register(eventPath(index, 'childId'))} />
-        <NumberInput label="出産費用" suffix="円" {...register(eventPath(index, 'deliveryCost'), { valueAsNumber: true })} />
+        <NumberInput label="出産費用" suffix="円" {...register(eventPath(index, 'deliveryCost'), numberRules({ min: 0 }))} />
       </div>
 
       <div>
@@ -74,33 +81,33 @@ export function ChildbirthEventFields({ index, control, register }: EventFieldsP
                 <PersonPicker control={control} label="対象者" {...register(eventPath(index, `leavePlans.${planIndex}.personId`))} />
                 <MonthInput
                   label="産休開始"
-                  {...register(eventPath(index, `leavePlans.${planIndex}.maternityLeave.from`))}
+                  {...register(eventPath(index, `leavePlans.${planIndex}.maternityLeave.from`), optionalYearMonthRules)}
                 />
                 <MonthInput
                   label="産休終了"
-                  {...register(eventPath(index, `leavePlans.${planIndex}.maternityLeave.to`))}
+                  {...register(eventPath(index, `leavePlans.${planIndex}.maternityLeave.to`), optionalYearMonthRules)}
                 />
                 <MonthInput
                   label="育休開始"
-                  {...register(eventPath(index, `leavePlans.${planIndex}.parentalLeave.from`))}
+                  {...register(eventPath(index, `leavePlans.${planIndex}.parentalLeave.from`), optionalYearMonthRules)}
                 />
                 <MonthInput
                   label="育休終了"
-                  {...register(eventPath(index, `leavePlans.${planIndex}.parentalLeave.to`))}
+                  {...register(eventPath(index, `leavePlans.${planIndex}.parentalLeave.to`), optionalYearMonthRules)}
                 />
                 <NumberInput
                   label="出生後休業支援給付 対象日数(任意)"
-                  {...register(eventPath(index, `leavePlans.${planIndex}.postnatalSupportDays`), { valueAsNumber: true })}
+                  {...register(eventPath(index, `leavePlans.${planIndex}.postnatalSupportDays`), optionalNumberRules({ min: 0, integer: true }))}
                 />
                 <NumberInput
                   label="復職後の時短係数(任意)"
                   hint="1.0=フルタイム、0.8=8割等"
                   step="0.01"
-                  {...register(eventPath(index, `leavePlans.${planIndex}.returnToWork.shortHoursFactor`), { valueAsNumber: true })}
+                  {...register(eventPath(index, `leavePlans.${planIndex}.returnToWork.shortHoursFactor`), optionalNumberRules({ min: 0, max: 1 }))}
                 />
                 <MonthInput
                   label="時短終了年月(任意)"
-                  {...register(eventPath(index, `leavePlans.${planIndex}.returnToWork.until`))}
+                  {...register(eventPath(index, `leavePlans.${planIndex}.returnToWork.until`), optionalYearMonthRules)}
                 />
               </div>
             </ItemCard>
@@ -122,30 +129,30 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <MonthInput label="購入年月" {...register(eventPath(index, 'yearMonth'))} />
-        <NumberInput label="物件価格" suffix="円" {...register(eventPath(index, 'propertyPrice'), { valueAsNumber: true })} />
+        <MonthInput label="購入年月" {...register(eventPath(index, 'yearMonth'), yearMonthRules)} />
+        <NumberInput label="物件価格" suffix="円" {...register(eventPath(index, 'propertyPrice'), numberRules({ min: 0 }))} />
         <SelectInput
           label="物件種別"
           help={PROPERTY_TYPE_HELP}
           options={[...PROPERTY_TYPE_OPTIONS]}
           {...register(eventPath(index, 'propertyType'))}
         />
-        <NumberInput label="頭金" suffix="円" {...register(eventPath(index, 'downPayment'), { valueAsNumber: true })} />
-        <NumberInput label="諸費用" suffix="円" {...register(eventPath(index, 'closingCosts'), { valueAsNumber: true })} />
+        <NumberInput label="頭金" suffix="円" {...register(eventPath(index, 'downPayment'), numberRules({ min: 0 }))} />
+        <NumberInput label="諸費用" suffix="円" {...register(eventPath(index, 'closingCosts'), numberRules({ min: 0 }))} />
         <NumberInput
           label="固定資産税(年額)"
           suffix="円"
-          {...register(eventPath(index, 'holdingCosts.propertyTaxAnnual'), { valueAsNumber: true })}
+          {...register(eventPath(index, 'holdingCosts.propertyTaxAnnual'), numberRules({ min: 0 }))}
         />
         <NumberInput
           label="管理費(月額・任意)"
           suffix="円"
-          {...register(eventPath(index, 'holdingCosts.managementFeeMonthly'), { valueAsNumber: true })}
+          {...register(eventPath(index, 'holdingCosts.managementFeeMonthly'), optionalNumberRules({ min: 0 }))}
         />
         <NumberInput
           label="修繕積立の年上昇率(任意)"
           step="0.001"
-          {...register(eventPath(index, 'holdingCosts.repairReserveEscalation'), { valueAsNumber: true })}
+          {...register(eventPath(index, 'holdingCosts.repairReserveEscalation'), optionalNumberRules())}
         />
       </div>
 
@@ -217,8 +224,8 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
             <ItemCard key={field.id} title={`ローン${loanIndex + 1}`} onRemove={() => loans.remove(loanIndex)}>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 <PersonPicker control={control} label="借入人" {...register(eventPath(index, `loans.${loanIndex}.borrowerPersonId`))} />
-                <NumberInput label="借入額" suffix="円" {...register(eventPath(index, `loans.${loanIndex}.principal`), { valueAsNumber: true })} />
-                <NumberInput label="返済期間" suffix="年" {...register(eventPath(index, `loans.${loanIndex}.years`), { valueAsNumber: true })} />
+                <NumberInput label="借入額" suffix="円" {...register(eventPath(index, `loans.${loanIndex}.principal`), numberRules({ min: 0 }))} />
+                <NumberInput label="返済期間" suffix="年" {...register(eventPath(index, `loans.${loanIndex}.years`), numberRules({ min: 1, integer: true }))} />
                 <SelectInput
                   label="返済方法"
                   help={LOAN_METHOD_HELP}
@@ -235,17 +242,17 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
                   label="基準金利からの優遇幅(任意)"
                   hint="変動金利のとき使用。マイナス値=優遇"
                   step="0.001"
-                  {...register(eventPath(index, `loans.${loanIndex}.spreadFromBaseRate`), { valueAsNumber: true })}
+                  {...register(eventPath(index, `loans.${loanIndex}.spreadFromBaseRate`), optionalNumberRules())}
                 />
                 <NumberInput
                   label="固定金利(任意)"
                   step="0.001"
-                  {...register(eventPath(index, `loans.${loanIndex}.fixedRate`), { valueAsNumber: true })}
+                  {...register(eventPath(index, `loans.${loanIndex}.fixedRate`), optionalNumberRules({ min: 0 }))}
                 />
                 <NumberInput
                   label="固定期間(任意)"
                   suffix="年"
-                  {...register(eventPath(index, `loans.${loanIndex}.fixedPeriodYears`), { valueAsNumber: true })}
+                  {...register(eventPath(index, `loans.${loanIndex}.fixedPeriodYears`), optionalNumberRules({ min: 0, integer: true }))}
                 />
                 <SelectInput
                   label="団体信用生命保険"
@@ -256,7 +263,7 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
                 <NumberInput
                   label="金利見直し間隔"
                   suffix="か月"
-                  {...register(eventPath(index, `loans.${loanIndex}.variableRules.rateResetMonths`), { valueAsNumber: true })}
+                  {...register(eventPath(index, `loans.${loanIndex}.variableRules.rateResetMonths`), numberRules({ min: 1, integer: true }))}
                 />
                 <label className="flex items-center gap-2 text-sm text-ink-secondary">
                   <input
@@ -287,8 +294,8 @@ export function LoanPrepaymentEventFields({ index, control, register }: EventFie
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       <LoanPicker control={control} label="対象ローン" {...register(eventPath(index, 'loanId'))} />
-      <MonthInput label="実行年月" {...register(eventPath(index, 'yearMonth'))} />
-      <NumberInput label="繰上返済額" suffix="円" {...register(eventPath(index, 'amount'), { valueAsNumber: true })} />
+      <MonthInput label="実行年月" {...register(eventPath(index, 'yearMonth'), yearMonthRules)} />
+      <NumberInput label="繰上返済額" suffix="円" {...register(eventPath(index, 'amount'), numberRules({ min: 0 }))} />
       <SelectInput
         label="方式"
         help={PREPAYMENT_METHOD_HELP}
@@ -367,9 +374,9 @@ export function EducationPlanFields({ index, control, register }: EventFieldsPro
         <div className="flex flex-col gap-3">
           {extracurricular.fields.map((field, exIndex) => (
             <div key={field.id} className="grid grid-cols-2 items-end gap-3 sm:grid-cols-4">
-              <NumberInput label="開始年齢" suffix="歳" {...register(eventPath(index, `extracurricularMonthly.${exIndex}.fromAge`), { valueAsNumber: true })} />
-              <NumberInput label="終了年齢" suffix="歳" {...register(eventPath(index, `extracurricularMonthly.${exIndex}.toAge`), { valueAsNumber: true })} />
-              <NumberInput label="月額" suffix="円" {...register(eventPath(index, `extracurricularMonthly.${exIndex}.amount`), { valueAsNumber: true })} />
+              <NumberInput label="開始年齢" suffix="歳" {...register(eventPath(index, `extracurricularMonthly.${exIndex}.fromAge`), numberRules({ min: 0, max: 120, integer: true }))} />
+              <NumberInput label="終了年齢" suffix="歳" {...register(eventPath(index, `extracurricularMonthly.${exIndex}.toAge`), numberRules({ min: 0, max: 120, integer: true }))} />
+              <NumberInput label="月額" suffix="円" {...register(eventPath(index, `extracurricularMonthly.${exIndex}.amount`), numberRules({ min: 0 }))} />
               <button
                 type="button"
                 onClick={() => extracurricular.remove(exIndex)}
@@ -388,11 +395,11 @@ export function EducationPlanFields({ index, control, register }: EventFieldsPro
 export function RecurringModifierEventFields({ index, register }: EventFieldsProps) {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-      <TextInput label="項目名" {...register(eventPath(index, 'label'))} />
-      <MonthInput label="開始年月" {...register(eventPath(index, 'startYearMonth'))} />
-      <NumberInput label="間隔(任意)" suffix="年" {...register(eventPath(index, 'intervalYears'), { valueAsNumber: true })} />
-      <NumberInput label="金額" suffix="円" {...register(eventPath(index, 'amount'), { valueAsNumber: true })} />
-      <NumberInput label="発生回数(任意)" hint="空欄=期間中ずっと" {...register(eventPath(index, 'occurrences'), { valueAsNumber: true })} />
+      <TextInput label="項目名" {...register(eventPath(index, 'label'), requiredTextRules)} />
+      <MonthInput label="開始年月" {...register(eventPath(index, 'startYearMonth'), yearMonthRules)} />
+      <NumberInput label="間隔(任意)" suffix="年" {...register(eventPath(index, 'intervalYears'), optionalNumberRules({ min: 1, integer: true }))} />
+      <NumberInput label="金額" suffix="円" {...register(eventPath(index, 'amount'), numberRules())} />
+      <NumberInput label="発生回数(任意)" hint="空欄=期間中ずっと" {...register(eventPath(index, 'occurrences'), optionalNumberRules({ min: 1, integer: true }))} />
       <SelectInput
         label="改定方法"
         help={INDEXATION_HELP}
@@ -406,9 +413,9 @@ export function RecurringModifierEventFields({ index, register }: EventFieldsPro
 export function OneTimeEventFields({ index, register }: EventFieldsProps) {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-      <TextInput label="項目名" {...register(eventPath(index, 'label'))} />
-      <MonthInput label="発生年月" {...register(eventPath(index, 'yearMonth'))} />
-      <NumberInput label="金額" suffix="円" hint="正=支出、負=収入(贈与等)" {...register(eventPath(index, 'amount'), { valueAsNumber: true })} />
+      <TextInput label="項目名" {...register(eventPath(index, 'label'), requiredTextRules)} />
+      <MonthInput label="発生年月" {...register(eventPath(index, 'yearMonth'), yearMonthRules)} />
+      <NumberInput label="金額" suffix="円" hint="正=支出、負=収入(贈与等)" {...register(eventPath(index, 'amount'), numberRules())} />
     </div>
   )
 }

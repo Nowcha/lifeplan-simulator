@@ -1,6 +1,7 @@
 import { useFieldArray, type Control, type UseFormRegister } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { AddButton, ItemCard, MonthInput, Section, TextInput } from '../form/fields'
+import { requiredTextRules, yearMonthRules } from '../../lib/validation'
 import { PersonForm } from './PersonForm'
 import { EducationEventPicker } from './pickers'
 
@@ -17,7 +18,11 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
     <div>
       <Section title="基本情報">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <TextInput label="自治体(rules参照キー)" placeholder="koto-ku" {...register('household.municipality')} />
+          <TextInput
+            label="自治体(rules参照キー)"
+            placeholder="koto-ku"
+            {...register('household.municipality', requiredTextRules)}
+          />
         </div>
       </Section>
 
@@ -63,7 +68,7 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
           {children.fields.map((field, index) => (
             <ItemCard key={field.id} title={`子ども${index + 1}`} onRemove={() => children.remove(index)}>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                <MonthInput label="生年月" {...register(`household.children.${index}.birthYearMonth`)} />
+                <MonthInput label="生年月" {...register(`household.children.${index}.birthYearMonth`, yearMonthRules)} />
                 <EducationEventPicker
                   control={control}
                   label="教育プラン"
