@@ -1,8 +1,9 @@
-import { useFieldArray, useWatch, type Control, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
+import { useFieldArray, useFormContext, useWatch, type Control, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { AddButton, HelpBadge, ItemCard, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
 import { BASE_RATE_MODEL_HELP, BASE_RATE_MODEL_OPTIONS } from '../../lib/formOptions'
 import { numberRules, requiredTextRules } from '../../lib/validation'
+import { describeReferences } from '../../lib/references'
 
 /** engine/montecarlo/paths.ts の BASE_RATE_FACTOR_ID と一致させる固定値。変更すると相関構造が壊れる。 */
 const BASE_RATE_FACTOR_ID = 'base-rate'
@@ -23,6 +24,7 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
   const assetClasses = useFieldArray({ control, name: 'assumptions.assetClasses' })
   const manualPath = useFieldArray({ control, name: 'assumptions.baseRate.manualPath' })
   const baseRateModel = useWatch({ control, name: 'assumptions.baseRate.model' })
+  const { getValues } = useFormContext<ProfileFormValues>()
 
   return (
     <div>
@@ -56,7 +58,17 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
       >
         <div className="flex flex-col gap-3">
           {assetClasses.fields.map((field, index) => (
-            <ItemCard key={field.id} title={`資産クラス${index + 1}`} onRemove={() => assetClasses.remove(index)}>
+            <ItemCard
+              key={field.id}
+              title={`資産クラス${index + 1}`}
+              onRemove={() => assetClasses.remove(index)}
+              getRemoveWarning={() =>
+                describeReferences(getValues(), {
+                  kind: 'assetClass',
+                  id: getValues(`assumptions.assetClasses.${index}.id`)
+                })
+              }
+            >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <TextInput
                   label="名前"

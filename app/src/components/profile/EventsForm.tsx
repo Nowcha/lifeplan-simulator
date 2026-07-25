@@ -1,9 +1,10 @@
-import { useFieldArray, useWatch, type Control, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
+import { useFieldArray, useFormContext, useWatch, type Control, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
 import type { LifeEvent } from '../../../../engine/types/index.js'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { eventPath } from '../../lib/formPath'
 import { AddButton, ItemCard, Section } from '../form/fields'
 import { EVENT_TYPE_OPTIONS } from '../../lib/formOptions'
+import { describeEventRemoval } from '../../lib/references'
 import {
   ChildbirthEventFields,
   EducationPlanFields,
@@ -89,6 +90,7 @@ function EventItem({ index, control, register, setValue }: EventsFormProps & { i
 
 export function EventsForm({ control, register, setValue }: EventsFormProps) {
   const events = useFieldArray({ control, name: 'events' })
+  const { getValues } = useFormContext<ProfileFormValues>()
 
   return (
     <Section
@@ -119,6 +121,7 @@ export function EventsForm({ control, register, setValue }: EventsFormProps) {
                 key={field.id}
                 title={`${EVENT_LABELS[type] ?? type}${typeCounters[type]}`}
                 onRemove={() => events.remove(index)}
+                getRemoveWarning={() => describeEventRemoval(getValues(), index)}
               >
                 <EventItem index={index} control={control} register={register} setValue={setValue} />
               </ItemCard>

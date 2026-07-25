@@ -1,8 +1,9 @@
-import { useFieldArray, type Control, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
+import { useFieldArray, useFormContext, type Control, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, HelpBadge, ItemCard, MonthInput, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
 import { AssetClassPicker } from './pickers'
+import { describeReferences } from '../../lib/references'
 import { numberRules, optionalNumberRules, optionalYearMonthRules, requiredTextRules } from '../../lib/validation'
 import {
   ACCOUNT_TYPE_HELP,
@@ -26,6 +27,7 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
   const baseExpenses = useFieldArray({ control, name: 'household.baseExpenses' })
   const financialAssets = useFieldArray({ control, name: 'household.financialAssets' })
   const contributions = useFieldArray({ control, name: 'household.savingsPolicy.contributions' })
+  const { getValues } = useFormContext<ProfileFormValues>()
   const drawdownOrder = usePrimitiveArrayField<ProfileFormValues, (typeof DRAWDOWN_ACCOUNT_OPTIONS)[number]['value']>(
     control,
     'household.savingsPolicy.drawdown.order',
@@ -46,7 +48,17 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
       >
         <div className="flex flex-col gap-3">
           {baseExpenses.fields.map((field, index) => (
-            <ItemCard key={field.id} title={`費目${index + 1}`} onRemove={() => baseExpenses.remove(index)}>
+            <ItemCard
+              key={field.id}
+              title={`費目${index + 1}`}
+              onRemove={() => baseExpenses.remove(index)}
+              getRemoveWarning={() =>
+                describeReferences(getValues(), {
+                  kind: 'expenseLabel',
+                  label: getValues(`household.baseExpenses.${index}.label`)
+                })
+              }
+            >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <TextInput label="項目名" {...register(`household.baseExpenses.${index}.label`, requiredTextRules)} />
                 <NumberInput

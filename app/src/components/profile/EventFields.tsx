@@ -1,4 +1,4 @@
-import { useFieldArray, useWatch, type Control, type FieldArrayPath, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
+import { useFieldArray, useFormContext, useWatch, type Control, type FieldArrayPath, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { eventPath } from '../../lib/formPath'
 import { rules } from '../../lib/engine'
@@ -14,6 +14,7 @@ import {
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput, TextInput } from '../form/fields'
 import { ChildPicker, LoanPicker, PersonPicker } from './pickers'
+import { describeReferences } from '../../lib/references'
 import {
   numberRules,
   optionalNumberRules,
@@ -125,6 +126,7 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
     eventPath(index, 'terminatesExpenseLabels'),
     (name, value) => setValue(name, value)
   )
+  const { getValues } = useFormContext<ProfileFormValues>()
 
   return (
     <div className="flex flex-col gap-4">
@@ -221,7 +223,17 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
         </div>
         <div className="flex flex-col gap-3">
           {loans.fields.map((field, loanIndex) => (
-            <ItemCard key={field.id} title={`ローン${loanIndex + 1}`} onRemove={() => loans.remove(loanIndex)}>
+            <ItemCard
+              key={field.id}
+              title={`ローン${loanIndex + 1}`}
+              onRemove={() => loans.remove(loanIndex)}
+              getRemoveWarning={() =>
+                describeReferences(getValues(), {
+                  kind: 'loan',
+                  id: String(getValues(eventPath(index, `loans.${loanIndex}.loanId`)) ?? '')
+                })
+              }
+            >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <PersonPicker control={control} label="借入人" {...register(eventPath(index, `loans.${loanIndex}.borrowerPersonId`))} />
                 <NumberInput label="借入額" suffix="円" {...register(eventPath(index, `loans.${loanIndex}.principal`), numberRules({ min: 0 }))} />

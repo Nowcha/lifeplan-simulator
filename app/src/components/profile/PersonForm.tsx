@@ -16,14 +16,15 @@ interface PersonFormProps {
   control: Control<ProfileFormValues>
   register: UseFormRegister<ProfileFormValues>
   onRemove: () => void
+  getRemoveWarning?: () => string | undefined
 }
 
-export function PersonForm({ index, control, register, onRemove }: PersonFormProps) {
+export function PersonForm({ index, control, register, onRemove, getRemoveWarning }: PersonFormProps) {
   const path = `household.persons.${index}` as const
   const curve = useFieldArray({ control, name: `household.persons.${index}.incomeCurve` })
 
   return (
-    <ItemCard title={`本人${index + 1}`} onRemove={onRemove}>
+    <ItemCard title={`本人${index + 1}`} onRemove={onRemove} getRemoveWarning={getRemoveWarning}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MonthInput label="生年月" {...register(`${path}.birthYearMonth`, yearMonthRules)} />
         <NumberInput
