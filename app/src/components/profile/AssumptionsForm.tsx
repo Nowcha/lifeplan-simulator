@@ -4,6 +4,7 @@ import { AddButton, HelpBadge, ItemCard, NumberInput, Section, SelectInput, Text
 import { BASE_RATE_MODEL_HELP, BASE_RATE_MODEL_OPTIONS } from '../../lib/formOptions'
 import { numberRules, requiredTextRules } from '../../lib/validation'
 import { describeReferences } from '../../lib/references'
+import { useUndo } from '../../lib/undoContext'
 
 /** engine/montecarlo/paths.ts の BASE_RATE_FACTOR_ID と一致させる固定値。変更すると相関構造が壊れる。 */
 const BASE_RATE_FACTOR_ID = 'base-rate'
@@ -25,6 +26,7 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
   const manualPath = useFieldArray({ control, name: 'assumptions.baseRate.manualPath' })
   const baseRateModel = useWatch({ control, name: 'assumptions.baseRate.model' })
   const { getValues } = useFormContext<ProfileFormValues>()
+  const { pushUndo } = useUndo()
 
   return (
     <div>
@@ -61,7 +63,11 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
             <ItemCard
               key={field.id}
               title={`資産クラス${index + 1}`}
-              onRemove={() => assetClasses.remove(index)}
+              onRemove={() => {
+                const removed = getValues(`assumptions.assetClasses.${index}`)
+                assetClasses.remove(index)
+                pushUndo(`資産クラス${index + 1}`, () => assetClasses.insert(index, removed))
+              }}
               getRemoveWarning={() =>
                 describeReferences(getValues(), {
                   kind: 'assetClass',

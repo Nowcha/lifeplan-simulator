@@ -5,6 +5,7 @@ import { sanitizeFormValue } from '../../lib/sanitizeFormValue'
 import { saveScenario } from '../../lib/scenarioStorage'
 import { collectErrorPaths } from '../../lib/fieldError'
 import { summarizeErrorCategories } from '../../lib/errorSummary'
+import { UndoProvider } from '../../lib/undo'
 import { HouseholdBasicsForm } from './HouseholdBasicsForm'
 import { HouseholdFinanceForm } from './HouseholdFinanceForm'
 import { EventsForm } from './EventsForm'
@@ -47,6 +48,8 @@ export function ProfileEditor({ initialProfile, onApply, onReset, onScenarioSave
 
   return (
     <FormProvider {...form}>
+    <UndoProvider>
+      {(undoBanner) => (
     <form onSubmit={handleSubmit(onApply)}>
       <nav className="sticky top-0 z-10 -mx-4 flex gap-2 overflow-x-auto border-b border-hairline bg-page/95 px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6">
         {CATEGORIES.map((c) => (
@@ -80,6 +83,7 @@ export function ProfileEditor({ initialProfile, onApply, onReset, onScenarioSave
       </div>
 
       <div className="sticky bottom-0 mt-8 border-t border-hairline bg-page py-4">
+        {undoBanner}
         {errorCategories.length > 0 && (
           <div role="alert" className="mb-3 rounded-sm border border-critical/40 bg-critical/5 px-4 py-3 text-sm">
             <span className="text-critical">
@@ -137,6 +141,8 @@ export function ProfileEditor({ initialProfile, onApply, onReset, onScenarioSave
         </div>
       </div>
     </form>
+      )}
+    </UndoProvider>
     </FormProvider>
   )
 }

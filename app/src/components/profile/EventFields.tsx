@@ -15,6 +15,7 @@ import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput, TextInput } from '../form/fields'
 import { ChildPicker, LoanPicker, PersonPicker } from './pickers'
 import { describeReferences } from '../../lib/references'
+import { useUndo } from '../../lib/undoContext'
 import {
   numberRules,
   optionalNumberRules,
@@ -127,6 +128,7 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
     (name, value) => setValue(name, value)
   )
   const { getValues } = useFormContext<ProfileFormValues>()
+  const { pushUndo } = useUndo()
 
   return (
     <div className="flex flex-col gap-4">
@@ -226,7 +228,11 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
             <ItemCard
               key={field.id}
               title={`ローン${loanIndex + 1}`}
-              onRemove={() => loans.remove(loanIndex)}
+              onRemove={() => {
+                const removed = getValues(eventPath(index, `loans.${loanIndex}`))
+                loans.remove(loanIndex)
+                pushUndo(`ローン${loanIndex + 1}`, () => loans.insert(loanIndex, removed as never))
+              }}
               getRemoveWarning={() =>
                 describeReferences(getValues(), {
                   kind: 'loan',

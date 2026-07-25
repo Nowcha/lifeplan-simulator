@@ -4,6 +4,7 @@ import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, HelpBadge, ItemCard, MonthInput, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
 import { AssetClassPicker } from './pickers'
 import { describeReferences } from '../../lib/references'
+import { useUndo } from '../../lib/undoContext'
 import { numberRules, optionalNumberRules, optionalYearMonthRules, requiredTextRules } from '../../lib/validation'
 import {
   ACCOUNT_TYPE_HELP,
@@ -28,6 +29,7 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
   const financialAssets = useFieldArray({ control, name: 'household.financialAssets' })
   const contributions = useFieldArray({ control, name: 'household.savingsPolicy.contributions' })
   const { getValues } = useFormContext<ProfileFormValues>()
+  const { pushUndo } = useUndo()
   const drawdownOrder = usePrimitiveArrayField<ProfileFormValues, (typeof DRAWDOWN_ACCOUNT_OPTIONS)[number]['value']>(
     control,
     'household.savingsPolicy.drawdown.order',
@@ -51,7 +53,11 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
             <ItemCard
               key={field.id}
               title={`費目${index + 1}`}
-              onRemove={() => baseExpenses.remove(index)}
+              onRemove={() => {
+                const removed = getValues(`household.baseExpenses.${index}`)
+                baseExpenses.remove(index)
+                pushUndo(`費目${index + 1}`, () => baseExpenses.insert(index, removed))
+              }}
               getRemoveWarning={() =>
                 describeReferences(getValues(), {
                   kind: 'expenseLabel',
@@ -100,7 +106,15 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
       >
         <div className="flex flex-col gap-3">
           {financialAssets.fields.map((field, index) => (
-            <ItemCard key={field.id} title={`資産${index + 1}`} onRemove={() => financialAssets.remove(index)}>
+            <ItemCard
+              key={field.id}
+              title={`資産${index + 1}`}
+              onRemove={() => {
+                const removed = getValues(`household.financialAssets.${index}`)
+                financialAssets.remove(index)
+                pushUndo(`資産${index + 1}`, () => financialAssets.insert(index, removed))
+              }}
+            >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <AssetClassPicker
                   control={control}
@@ -153,7 +167,15 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
             </div>
             <div className="flex flex-col gap-3">
               {contributions.fields.map((field, index) => (
-                <ItemCard key={field.id} title={`積立${index + 1}`} onRemove={() => contributions.remove(index)}>
+                <ItemCard
+                  key={field.id}
+                  title={`積立${index + 1}`}
+                  onRemove={() => {
+                    const removed = getValues(`household.savingsPolicy.contributions.${index}`)
+                    contributions.remove(index)
+                    pushUndo(`積立${index + 1}`, () => contributions.insert(index, removed))
+                  }}
+                >
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <SelectInput
                       label="口座"

@@ -4,6 +4,7 @@ import { AddButton, ItemCard, MonthInput, Section, SelectInput } from '../form/f
 import { requiredTextRules, yearMonthRules } from '../../lib/validation'
 import { MUNICIPALITY_HELP, municipalityOptions } from '../../lib/formOptions'
 import { describeReferences } from '../../lib/references'
+import { useUndo } from '../../lib/undoContext'
 import { PersonForm } from './PersonForm'
 import { EducationEventPicker } from './pickers'
 
@@ -16,6 +17,7 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
   const persons = useFieldArray({ control, name: 'household.persons' })
   const children = useFieldArray({ control, name: 'household.children' })
   const { getValues } = useFormContext<ProfileFormValues>()
+  const { pushUndo } = useUndo()
 
   return (
     <div>
@@ -56,7 +58,11 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
               index={index}
               control={control}
               register={register}
-              onRemove={() => persons.remove(index)}
+              onRemove={() => {
+                const removed = getValues(`household.persons.${index}`)
+                persons.remove(index)
+                pushUndo(`本人${index + 1}`, () => persons.insert(index, removed))
+              }}
               getRemoveWarning={() =>
                 describeReferences(getValues(), { kind: 'person', id: getValues(`household.persons.${index}.id`) })
               }
@@ -82,7 +88,11 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
             <ItemCard
               key={field.id}
               title={`子ども${index + 1}`}
-              onRemove={() => children.remove(index)}
+              onRemove={() => {
+                const removed = getValues(`household.children.${index}`)
+                children.remove(index)
+                pushUndo(`子ども${index + 1}`, () => children.insert(index, removed))
+              }}
               getRemoveWarning={() =>
                 describeReferences(getValues(), { kind: 'child', id: getValues(`household.children.${index}.id`) })
               }

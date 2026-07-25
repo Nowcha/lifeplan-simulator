@@ -5,6 +5,7 @@ import { eventPath } from '../../lib/formPath'
 import { AddButton, ItemCard, Section } from '../form/fields'
 import { EVENT_TYPE_OPTIONS } from '../../lib/formOptions'
 import { describeEventRemoval } from '../../lib/references'
+import { useUndo } from '../../lib/undoContext'
 import {
   ChildbirthEventFields,
   EducationPlanFields,
@@ -91,6 +92,7 @@ function EventItem({ index, control, register, setValue }: EventsFormProps & { i
 export function EventsForm({ control, register, setValue }: EventsFormProps) {
   const events = useFieldArray({ control, name: 'events' })
   const { getValues } = useFormContext<ProfileFormValues>()
+  const { pushUndo } = useUndo()
 
   return (
     <Section
@@ -120,7 +122,12 @@ export function EventsForm({ control, register, setValue }: EventsFormProps) {
               <ItemCard
                 key={field.id}
                 title={`${EVENT_LABELS[type] ?? type}${typeCounters[type]}`}
-                onRemove={() => events.remove(index)}
+                onRemove={() => {
+                  const label = `${EVENT_LABELS[type] ?? type}${typeCounters[type] ?? ''}`
+                  const removed = getValues(`events.${index}`)
+                  events.remove(index)
+                  pushUndo(label, () => events.insert(index, removed))
+                }}
                 getRemoveWarning={() => describeEventRemoval(getValues(), index)}
               >
                 <EventItem index={index} control={control} register={register} setValue={setValue} />
