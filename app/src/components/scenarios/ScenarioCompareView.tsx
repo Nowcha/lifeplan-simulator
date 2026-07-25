@@ -83,7 +83,7 @@ export function ScenarioCompareView({ scenarios, onScenariosChanged }: ScenarioC
             {scenarios.map((scenario) => (
               <label
                 key={scenario.id}
-                className="flex items-center justify-between gap-3 rounded-sm border border-hairline bg-surface px-4 py-2.5"
+                className="flex min-h-11 items-center justify-between gap-3 rounded-sm border border-hairline bg-surface px-4 py-2.5"
               >
                 <span className="flex items-center gap-3">
                   <input
@@ -98,7 +98,7 @@ export function ScenarioCompareView({ scenarios, onScenariosChanged }: ScenarioC
                 <button
                   type="button"
                   onClick={() => handleDelete(scenario.id)}
-                  className="text-xs text-ink-muted hover:text-critical"
+                  className="-my-2 shrink-0 px-2 py-2 text-xs text-ink-muted hover:text-critical"
                 >
                   削除
                 </button>
@@ -111,7 +111,7 @@ export function ScenarioCompareView({ scenarios, onScenariosChanged }: ScenarioC
           type="button"
           onClick={() => void handleCompare()}
           disabled={selectedIds.length === 0 || isComparing}
-          className="mt-5 rounded-sm bg-amber-500 px-5 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-5 min-h-11 w-full rounded-sm bg-amber-500 px-5 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-0 sm:w-auto"
         >
           {isComparing ? '計算しています…' : `比較を実行(${selectedIds.length}件選択中)`}
         </button>
@@ -184,7 +184,7 @@ export function ScenarioCompareView({ scenarios, onScenariosChanged }: ScenarioC
 
           <section className="border-t border-hairline py-8">
             <h3 className="text-base font-medium text-ink">純資産の推移(中央値・シナリオ間比較)</h3>
-            <div className="mt-5 rounded-sm border border-hairline bg-surface p-6">
+            <div className="mt-5 rounded-sm border border-hairline bg-surface p-3 sm:p-6">
               <CompareChart series={compareSeries} />
             </div>
           </section>

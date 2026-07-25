@@ -58,7 +58,7 @@ export function ChildbirthEventFields({ index, control, register }: EventFieldsP
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MonthInput label="出産予定年月" {...register(eventPath(index, 'expectedYearMonth'), yearMonthRules)} />
         <ChildPicker control={control} label="対象の子ども" {...register(eventPath(index, 'childId'))} />
         <NumberInput label="出産費用" suffix="円" {...register(eventPath(index, 'deliveryCost'), numberRules({ min: 0 }))} />
@@ -77,7 +77,7 @@ export function ChildbirthEventFields({ index, control, register }: EventFieldsP
         <div className="flex flex-col gap-3">
           {leavePlans.fields.map((field, planIndex) => (
             <ItemCard key={field.id} title={`育休プラン${planIndex + 1}`} onRemove={() => leavePlans.remove(planIndex)}>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <PersonPicker control={control} label="対象者" {...register(eventPath(index, `leavePlans.${planIndex}.personId`))} />
                 <MonthInput
                   label="産休開始"
@@ -128,7 +128,7 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MonthInput label="購入年月" {...register(eventPath(index, 'yearMonth'), yearMonthRules)} />
         <NumberInput label="物件価格" suffix="円" {...register(eventPath(index, 'propertyPrice'), numberRules({ min: 0 }))} />
         <SelectInput
@@ -156,7 +156,7 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <label className="flex items-center gap-2 text-sm text-ink-secondary">
           <input type="checkbox" className="h-4 w-4 accent-amber-500" {...register(eventPath(index, 'taxCreditEligibility.eligible'))} />
           住宅ローン控除の対象
@@ -185,7 +185,7 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
               <input
                 value={label}
                 onChange={(e) => terminatesLabels.update(i, e.target.value)}
-                className="w-full rounded-sm border border-hairline-strong bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-amber-500"
+                className="min-h-11 w-full rounded-sm border border-hairline-strong bg-surface px-3 py-1.5 text-base text-ink outline-none focus:border-amber-500 sm:min-h-0 sm:text-sm"
                 placeholder="住居費(賃貸)"
               />
               <button type="button" onClick={() => terminatesLabels.remove(i)} className="text-xs text-ink-muted hover:text-critical">
@@ -222,7 +222,7 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
         <div className="flex flex-col gap-3">
           {loans.fields.map((field, loanIndex) => (
             <ItemCard key={field.id} title={`ローン${loanIndex + 1}`} onRemove={() => loans.remove(loanIndex)}>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <PersonPicker control={control} label="借入人" {...register(eventPath(index, `loans.${loanIndex}.borrowerPersonId`))} />
                 <NumberInput label="借入額" suffix="円" {...register(eventPath(index, `loans.${loanIndex}.principal`), numberRules({ min: 0 }))} />
                 <NumberInput label="返済期間" suffix="年" {...register(eventPath(index, `loans.${loanIndex}.years`), numberRules({ min: 1, integer: true }))} />
@@ -292,7 +292,7 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
 
 export function LoanPrepaymentEventFields({ index, control, register }: EventFieldsProps) {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <LoanPicker control={control} label="対象ローン" {...register(eventPath(index, 'loanId'))} />
       <MonthInput label="実行年月" {...register(eventPath(index, 'yearMonth'), yearMonthRules)} />
       <NumberInput label="繰上返済額" suffix="円" {...register(eventPath(index, 'amount'), numberRules({ min: 0 }))} />
@@ -321,7 +321,7 @@ export function EducationPlanFields({ index, control, register }: EventFieldsPro
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <ChildPicker control={control} label="対象の子ども" {...register(eventPath(index, 'childId'))} />
         <SelectInput
           label="未就学(保育・幼稚園)"
@@ -373,7 +373,7 @@ export function EducationPlanFields({ index, control, register }: EventFieldsPro
         </div>
         <div className="flex flex-col gap-3">
           {extracurricular.fields.map((field, exIndex) => (
-            <div key={field.id} className="grid grid-cols-2 items-end gap-3 sm:grid-cols-4">
+            <div key={field.id} className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <NumberInput label="開始年齢" suffix="歳" {...register(eventPath(index, `extracurricularMonthly.${exIndex}.fromAge`), numberRules({ min: 0, max: 120, integer: true }))} />
               <NumberInput label="終了年齢" suffix="歳" {...register(eventPath(index, `extracurricularMonthly.${exIndex}.toAge`), numberRules({ min: 0, max: 120, integer: true }))} />
               <NumberInput label="月額" suffix="円" {...register(eventPath(index, `extracurricularMonthly.${exIndex}.amount`), numberRules({ min: 0 }))} />
@@ -394,7 +394,7 @@ export function EducationPlanFields({ index, control, register }: EventFieldsPro
 
 export function RecurringModifierEventFields({ index, register }: EventFieldsProps) {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <TextInput label="項目名" {...register(eventPath(index, 'label'), requiredTextRules)} />
       <MonthInput label="開始年月" {...register(eventPath(index, 'startYearMonth'), yearMonthRules)} />
       <NumberInput label="間隔(任意)" suffix="年" {...register(eventPath(index, 'intervalYears'), optionalNumberRules({ min: 1, integer: true }))} />
@@ -412,7 +412,7 @@ export function RecurringModifierEventFields({ index, register }: EventFieldsPro
 
 export function OneTimeEventFields({ index, register }: EventFieldsProps) {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <TextInput label="項目名" {...register(eventPath(index, 'label'), requiredTextRules)} />
       <MonthInput label="発生年月" {...register(eventPath(index, 'yearMonth'), yearMonthRules)} />
       <NumberInput label="金額" suffix="円" hint="正=支出、負=収入(贈与等)" {...register(eventPath(index, 'amount'), numberRules())} />

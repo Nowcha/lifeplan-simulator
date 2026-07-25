@@ -27,7 +27,7 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
   return (
     <div>
       <Section title="シミュレーション条件">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <NumberInput label="開始年" {...register('assumptions.simulation.startYear', numberRules({ min: 1900, max: 2200, integer: true }))} />
           <NumberInput label="終了年齢(最年長者基準)" suffix="歳" {...register('assumptions.simulation.endAge', numberRules({ min: 0, max: 120, integer: true }))} />
           <NumberInput label="モンテカルロ試行数" hint="多いほど精度は上がるが計算時間も増える" {...register('assumptions.simulation.paths', numberRules({ min: 1, integer: true }))} />
@@ -36,7 +36,7 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
       </Section>
 
       <Section title="インフレ・賃金上昇率" note="平均(mean)と年率のばらつき(volatility)を小数で指定(0.02 = 年2%)。">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <NumberInput label="インフレ率(平均)" step="0.001" {...register('assumptions.inflation.mean', numberRules())} />
           <NumberInput label="インフレ率(変動)" step="0.001" {...register('assumptions.inflation.volatility', numberRules({ min: 0 }))} />
           <NumberInput label="賃金上昇率(平均)" step="0.001" {...register('assumptions.wageGrowth.mean', numberRules())} />
@@ -57,7 +57,7 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
         <div className="flex flex-col gap-3">
           {assetClasses.fields.map((field, index) => (
             <ItemCard key={field.id} title={`資産クラス${index + 1}`} onRemove={() => assetClasses.remove(index)}>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <TextInput
                   label="名前"
                   hint="保有資産・積立配分から選べるようになる呼び名"
@@ -74,7 +74,7 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
       <CorrelationMatrixEditor control={control} setValue={setValue} />
 
       <Section title="住宅ローン基準金利">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <NumberInput label="初期値" step="0.001" {...register('assumptions.baseRate.initial', numberRules())} />
           <SelectInput
             label="モデル"
@@ -85,7 +85,7 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
         </div>
 
         {baseRateModel === 'mean-reverting' && (
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <NumberInput label="回帰速度" step="0.001" {...register('assumptions.baseRate.meanReversion.speed', numberRules({ min: 0 }))} />
             <NumberInput label="長期平均" step="0.001" {...register('assumptions.baseRate.meanReversion.longTermMean', numberRules())} />
             <NumberInput label="ボラティリティ" step="0.001" {...register('assumptions.baseRate.meanReversion.volatility', numberRules({ min: 0 }))} />
@@ -100,7 +100,7 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
             </div>
             <div className="flex flex-col gap-2">
               {manualPath.fields.map((field, index) => (
-                <div key={field.id} className="grid grid-cols-2 items-end gap-3 sm:grid-cols-3">
+                <div key={field.id} className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <NumberInput label="年" {...register(`assumptions.baseRate.manualPath.${index}.year`, numberRules({ min: 1900, max: 2200, integer: true }))} />
                   <NumberInput label="金利" step="0.001" {...register(`assumptions.baseRate.manualPath.${index}.rate`, numberRules())} />
                   <button
@@ -183,6 +183,8 @@ function CorrelationMatrixEditor({
         <p className="text-sm text-ink-muted">要因がありません。</p>
       ) : (
         <div className="overflow-x-auto">
+          {/* 行列は折り返せないため横スクロール前提。スクロールできることを明示する */}
+          <p className="mb-2 text-xs text-ink-muted sm:hidden">← 横にスクロールすると全ての要因を表示できます</p>
           <table className="border-collapse text-sm">
             <tbody>
               {cm.factors.map((factor, i) => {
@@ -199,7 +201,7 @@ function CorrelationMatrixEditor({
                           <input
                             value={factor}
                             onChange={(e) => renameFactor(i, e.target.value)}
-                            className="w-32 rounded-sm border border-hairline-strong bg-surface px-2 py-1 text-xs text-ink outline-none focus:border-amber-500"
+                            className="min-h-11 w-32 rounded-sm border border-hairline-strong bg-surface px-2 py-1 text-base text-ink outline-none focus:border-amber-500 sm:min-h-0 sm:text-xs"
                           />
                         )}
                         <button type="button" onClick={() => removeFactor(i)} className="text-xs text-ink-muted hover:text-critical">
@@ -222,7 +224,7 @@ function CorrelationMatrixEditor({
                               value={cm.matrix[i]?.[j] ?? 0}
                               onChange={(e) => setCell(i, j, Number(e.target.value))}
                               title={`${factor} × ${otherFactor}`}
-                              className="w-16 rounded-sm border border-hairline-strong bg-surface px-1.5 py-1 text-xs text-ink outline-none focus:border-amber-500"
+                              className="min-h-11 w-16 rounded-sm border border-hairline-strong bg-surface px-1.5 py-1 text-base text-ink outline-none focus:border-amber-500 sm:min-h-0 sm:text-xs"
                             />
                           )}
                         </td>
