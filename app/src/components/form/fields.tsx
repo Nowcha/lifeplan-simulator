@@ -77,8 +77,14 @@ export function HelpBadge({ text }: { text: string }) {
   )
 }
 
+/**
+ * text-base(16px)→sm:text-sm(14px) の順は意図的。iOS Safari はフォントサイズが
+ * 16px 未満の入力にフォーカスするとページを自動ズームするため、モバイルでは
+ * 16px を維持する。高さもタップ領域の目安44pxに合わせ、広い画面で従来の詰まった
+ * 見た目に戻す。
+ */
 const inputClass =
-  'w-full rounded-sm border border-hairline-strong bg-surface px-3 py-1.5 text-ink outline-none focus:border-amber-500'
+  'w-full min-h-11 rounded-sm border border-hairline-strong bg-surface px-3 py-1.5 text-base text-ink outline-none focus:border-amber-500 sm:min-h-0 sm:text-sm'
 
 type TextInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string
@@ -203,19 +209,34 @@ export function Section({ title, note, children, actions }: SectionProps) {
 interface ItemCardProps {
   title: string
   onRemove?: () => void
+  /**
+   * 削除確認に追記する警告(他から参照されている等)。全カードで常時計算すると
+   * 入力のたびにフォーム全体を走査することになるため、クリック時に評価する。
+   */
+  getRemoveWarning?: () => string | undefined
   children: ReactNode
 }
 
-export function ItemCard({ title, onRemove, children }: ItemCardProps) {
+/**
+ * 人物・費目・資産・イベントなど「まとまり」1件を表すカード。削除は取り消せず、
+ * 入力済みの内容がまとめて消えるため確認を挟む(シナリオ削除・サンプル復帰と
+ * 同じ扱いに揃える)。収入カーブの1行のようなサブ行はこの限りではない。
+ */
+export function ItemCard({ title, onRemove, getRemoveWarning, children }: ItemCardProps) {
   return (
     <div className="rounded-sm border border-hairline bg-surface p-4">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <h4 className="text-sm font-medium text-ink">{title}</h4>
         {onRemove && (
           <button
             type="button"
-            onClick={onRemove}
-            className="text-xs text-ink-muted hover:text-critical"
+            onClick={() => {
+              const warning = getRemoveWarning?.()
+              const base = `「${title}」を削除します。入力した内容は元に戻せません。`
+              const message = warning === undefined ? `${base}よろしいですか?` : `${base}\n\n${warning}\n\n削除しますか?`
+              if (window.confirm(message)) onRemove()
+            }}
+            className="-my-2 shrink-0 px-2 py-2 text-xs text-ink-muted hover:text-critical"
           >
             削除
           </button>

@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
-import { formatManYen } from '../../lib/format'
+import { useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { formatAxisYen, formatManYen } from '../../lib/format'
+import { useContainerWidth } from '../../lib/useContainerWidth'
 
 export interface CompareSeries {
   id: string
@@ -13,9 +14,24 @@ interface CompareChartProps {
   series: CompareSeries[]
 }
 
-const MARGIN = { top: 16, right: 16, bottom: 32, left: 72 }
-const WIDTH = 920
-const HEIGHT = 380
+const NARROW_BREAKPOINT = 560
+const MIN_WIDTH = 280
+
+/** FanChart と同じ考え方: viewBox を実ピクセル幅と1:1にして軸ラベルの可読性を保つ */
+function layoutFor(width: number): {
+  height: number
+  margin: { top: number; right: number; bottom: number; left: number }
+  isNarrow: boolean
+} {
+  const isNarrow = width < NARROW_BREAKPOINT
+  return {
+    height: isNarrow ? 260 : 380,
+    margin: isNarrow
+      ? { top: 12, right: 8, bottom: 28, left: 48 }
+      : { top: 16, right: 16, bottom: 32, left: 72 },
+    isNarrow
+  }
+}
 
 function niceTicks(min: number, max: number, count: number): number[] {
   if (min === max) return [min]
@@ -31,8 +47,11 @@ function niceTicks(min: number, max: number, count: number): number[] {
 
 export function CompareChart({ series }: CompareChartProps) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
+  const [containerRef, containerWidth] = useContainerWidth<HTMLDivElement>()
   const years = series[0]?.years ?? []
 
+  const WIDTH = Math.max(MIN_WIDTH, containerWidth)
+  const { height: HEIGHT, margin: MARGIN, isNarrow } = layoutFor(WIDTH)
   const plotWidth = WIDTH - MARGIN.left - MARGIN.right
   const plotHeight = HEIGHT - MARGIN.top - MARGIN.bottom
 
@@ -47,37 +66,43 @@ export function CompareChart({ series }: CompareChartProps) {
     const xScale = (i: number): number => (years.length <= 1 ? 0 : (i / (years.length - 1)) * plotWidth)
     const yScale = (v: number): number => plotHeight - ((v - minY) / (maxY - minY)) * plotHeight
 
-    return { minY, maxY, x: xScale, y: yScale, yTicks: niceTicks(minY, maxY, 5) }
-  }, [series, years.length, plotWidth, plotHeight])
+    return { minY, maxY, x: xScale, y: yScale, yTicks: niceTicks(minY, maxY, isNarrow ? 4 : 5) }
+  }, [series, years.length, plotWidth, plotHeight, isNarrow])
 
   const linePath = (values: number[]): string => values.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(v)}`).join(' ')
 
-  const xTickEvery = Math.max(1, Math.ceil(years.length / 8))
+  const xTickEvery = Math.max(1, Math.ceil(years.length / (isNarrow ? 4 : 8)))
   const hovered = hoverIndex
+
+  /** マウスはホバー、タッチはタップ/横スクラブ(縦スクロールは pan-y で維持) */
+  function updateIndexFrom(e: ReactPointerEvent<SVGSVGElement>): void {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const relX = ((e.clientX - rect.left) / rect.width) * WIDTH - MARGIN.left
+    const idx = Math.round((relX / plotWidth) * (years.length - 1))
+    setHoverIndex(Math.min(years.length - 1, Math.max(0, idx)))
+  }
 
   if (series.length === 0) return <p className="text-sm text-ink-muted">比較するシナリオを選んでください。</p>
 
   return (
-    <div className="viz-root">
+    <div className="viz-root" ref={containerRef}>
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         role="img"
         aria-label="シナリオ間の純資産推移比較"
-        className="w-full"
-        onMouseLeave={() => setHoverIndex(null)}
-        onMouseMove={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect()
-          const relX = ((e.clientX - rect.left) / rect.width) * WIDTH - MARGIN.left
-          const idx = Math.round((relX / plotWidth) * (years.length - 1))
-          setHoverIndex(Math.min(years.length - 1, Math.max(0, idx)))
+        className="w-full touch-pan-y"
+        onPointerLeave={() => setHoverIndex(null)}
+        onPointerDown={updateIndexFrom}
+        onPointerMove={(e) => {
+          if (e.pointerType === 'mouse' || e.buttons > 0) updateIndexFrom(e)
         }}
       >
         <g transform={`translate(${MARGIN.left},${MARGIN.top})`}>
           {yTicks.map((t) => (
             <g key={t}>
               <line x1={0} x2={plotWidth} y1={y(t)} y2={y(t)} stroke="var(--color-hairline)" strokeWidth={1} />
-              <text x={-10} y={y(t)} textAnchor="end" dominantBaseline="middle" className="fill-ink-muted text-[11px] tabular">
-                {formatManYen(t)}
+              <text x={-8} y={y(t)} textAnchor="end" dominantBaseline="middle" className="fill-ink-muted text-[11px] tabular">
+                {formatAxisYen(t, isNarrow)}
               </text>
             </g>
           ))}

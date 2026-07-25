@@ -1,7 +1,9 @@
-import { useFieldArray, type Control, type UseFormRegister } from 'react-hook-form'
+import { useFieldArray, useFormContext, type Control, type UseFormRegister } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
-import { AddButton, ItemCard, MonthInput, Section, TextInput } from '../form/fields'
+import { AddButton, ItemCard, MonthInput, Section, SelectInput } from '../form/fields'
 import { requiredTextRules, yearMonthRules } from '../../lib/validation'
+import { MUNICIPALITY_HELP, municipalityOptions } from '../../lib/formOptions'
+import { describeReferences } from '../../lib/references'
 import { PersonForm } from './PersonForm'
 import { EducationEventPicker } from './pickers'
 
@@ -13,14 +15,16 @@ interface HouseholdBasicsFormProps {
 export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormProps) {
   const persons = useFieldArray({ control, name: 'household.persons' })
   const children = useFieldArray({ control, name: 'household.children' })
+  const { getValues } = useFormContext<ProfileFormValues>()
 
   return (
     <div>
       <Section title="基本情報">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <TextInput
-            label="自治体(rules参照キー)"
-            placeholder="koto-ku"
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <SelectInput
+            label="お住まいの自治体"
+            help={MUNICIPALITY_HELP}
+            options={municipalityOptions()}
             {...register('household.municipality', requiredTextRules)}
           />
         </div>
@@ -47,7 +51,16 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
       >
         <div className="flex flex-col gap-4">
           {persons.fields.map((field, index) => (
-            <PersonForm key={field.id} index={index} control={control} register={register} onRemove={() => persons.remove(index)} />
+            <PersonForm
+              key={field.id}
+              index={index}
+              control={control}
+              register={register}
+              onRemove={() => persons.remove(index)}
+              getRemoveWarning={() =>
+                describeReferences(getValues(), { kind: 'person', id: getValues(`household.persons.${index}.id`) })
+              }
+            />
           ))}
         </div>
       </Section>
@@ -66,8 +79,15 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
       >
         <div className="flex flex-col gap-3">
           {children.fields.map((field, index) => (
-            <ItemCard key={field.id} title={`子ども${index + 1}`} onRemove={() => children.remove(index)}>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <ItemCard
+              key={field.id}
+              title={`子ども${index + 1}`}
+              onRemove={() => children.remove(index)}
+              getRemoveWarning={() =>
+                describeReferences(getValues(), { kind: 'child', id: getValues(`household.children.${index}.id`) })
+              }
+            >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <MonthInput label="生年月" {...register(`household.children.${index}.birthYearMonth`, yearMonthRules)} />
                 <EducationEventPicker
                   control={control}
