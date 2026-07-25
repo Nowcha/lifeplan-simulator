@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
-import { formatManYen } from '../../lib/format'
+import { useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { formatAxisYen, formatManYen } from '../../lib/format'
+import { useContainerWidth } from '../../lib/useContainerWidth'
 
 export interface FanChartSeries {
   years: number[]
@@ -13,9 +14,31 @@ interface FanChartProps {
   data: FanChartSeries
 }
 
-const MARGIN = { top: 16, right: 16, bottom: 32, left: 72 }
-const WIDTH = 920
-const HEIGHT = 380
+/** これ以下を「狭い画面」として扱い、余白・目盛り数・ラベル表記を切り替える */
+const NARROW_BREAKPOINT = 560
+/** 計測前(width=0)や極端に狭いコンテナでも破綻しないための下限 */
+const MIN_WIDTH = 280
+
+/**
+ * viewBox は実ピクセル幅と1:1にする。固定幅のviewBoxを縮小表示すると軸ラベルまで
+ * 一緒に縮み、375px幅では実効3.3pxになって読めなくなるため。
+ */
+function layoutFor(width: number): {
+  width: number
+  height: number
+  margin: { top: number; right: number; bottom: number; left: number }
+  isNarrow: boolean
+} {
+  const isNarrow = width < NARROW_BREAKPOINT
+  return {
+    width,
+    height: isNarrow ? 260 : 380,
+    margin: isNarrow
+      ? { top: 12, right: 8, bottom: 28, left: 48 }
+      : { top: 16, right: 16, bottom: 32, left: 72 },
+    isNarrow
+  }
+}
 
 function niceTicks(min: number, max: number, count: number): number[] {
   if (min === max) return [min]
@@ -32,7 +55,11 @@ function niceTicks(min: number, max: number, count: number): number[] {
 export function FanChart({ data }: FanChartProps) {
   const { years, percentiles, deterministic } = data
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
+  const [containerRef, containerWidth] = useContainerWidth<HTMLDivElement>()
 
+  const { width: WIDTH, height: HEIGHT, margin: MARGIN, isNarrow } = layoutFor(
+    Math.max(MIN_WIDTH, containerWidth)
+  )
   const plotWidth = WIDTH - MARGIN.left - MARGIN.right
   const plotHeight = HEIGHT - MARGIN.top - MARGIN.bottom
 
@@ -47,8 +74,8 @@ export function FanChart({ data }: FanChartProps) {
     const xScale = (i: number): number => (years.length <= 1 ? 0 : (i / (years.length - 1)) * plotWidth)
     const yScale = (v: number): number => plotHeight - ((v - minY) / (maxY - minY)) * plotHeight
 
-    return { minY, maxY, x: xScale, y: yScale, yTicks: niceTicks(minY, maxY, 5) }
-  }, [years.length, percentiles, deterministic, plotWidth, plotHeight])
+    return { minY, maxY, x: xScale, y: yScale, yTicks: niceTicks(minY, maxY, isNarrow ? 4 : 5) }
+  }, [years.length, percentiles, deterministic, plotWidth, plotHeight, isNarrow])
 
   /** lower境界を左→右、upper境界を右→左でたどって囲む帯領域のpathを作る */
   const bandPath = (lower: number[], upper: number[]): string => {
@@ -63,22 +90,28 @@ export function FanChart({ data }: FanChartProps) {
   const linePath = (values: number[]): string =>
     values.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(v)}`).join(' ')
 
-  const xTickEvery = Math.max(1, Math.ceil(years.length / 8))
+  const xTickEvery = Math.max(1, Math.ceil(years.length / (isNarrow ? 4 : 8)))
   const hovered = hoverIndex !== null ? hoverIndex : null
 
+  /** マウスはホバー、タッチはタップ/横スクラブで読み取る(縦スクロールは pan-y で維持) */
+  function updateIndexFrom(e: ReactPointerEvent<SVGSVGElement>): void {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const relX = ((e.clientX - rect.left) / rect.width) * WIDTH - MARGIN.left
+    const idx = Math.round((relX / plotWidth) * (years.length - 1))
+    setHoverIndex(Math.min(years.length - 1, Math.max(0, idx)))
+  }
+
   return (
-    <div className="viz-root">
+    <div className="viz-root" ref={containerRef}>
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         role="img"
         aria-label="世帯の純資産推移の確率分布(ファンチャート)"
-        className="w-full"
-        onMouseLeave={() => setHoverIndex(null)}
-        onMouseMove={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect()
-          const relX = ((e.clientX - rect.left) / rect.width) * WIDTH - MARGIN.left
-          const idx = Math.round((relX / plotWidth) * (years.length - 1))
-          setHoverIndex(Math.min(years.length - 1, Math.max(0, idx)))
+        className="w-full touch-pan-y"
+        onPointerLeave={() => setHoverIndex(null)}
+        onPointerDown={updateIndexFrom}
+        onPointerMove={(e) => {
+          if (e.pointerType === 'mouse' || e.buttons > 0) updateIndexFrom(e)
         }}
       >
         <g transform={`translate(${MARGIN.left},${MARGIN.top})`}>
@@ -93,8 +126,8 @@ export function FanChart({ data }: FanChartProps) {
                 stroke="var(--color-hairline)"
                 strokeWidth={1}
               />
-              <text x={-10} y={y(t)} textAnchor="end" dominantBaseline="middle" className="fill-ink-muted text-[11px] tabular">
-                {formatManYen(t)}
+              <text x={-8} y={y(t)} textAnchor="end" dominantBaseline="middle" className="fill-ink-muted text-[11px] tabular">
+                {formatAxisYen(t, isNarrow)}
               </text>
             </g>
           ))}

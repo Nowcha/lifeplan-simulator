@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { formatManYen, formatPercent, formatYen } from "../format";
+import { formatAxisYen, formatManYen, formatPercent, formatYen } from "../format";
 
 describe("formatManYen", () => {
   test("万円単位に丸めて桁区切りを入れる", () => {
@@ -36,6 +36,32 @@ describe("formatYen", () => {
 
   test("0に丸まる負の端数を -0円 と表示しない", () => {
     expect(formatYen(-0.4)).toBe("0円");
+  });
+});
+
+describe("formatAxisYen", () => {
+  test("通常幅では万円単位(単位記号は省く)", () => {
+    expect(formatAxisYen(200_000_000, false)).toBe("20,000万");
+    expect(formatAxisYen(5_000_000, false)).toBe("500万");
+  });
+
+  test("狭い画面では1億円以上を億単位に畳んで桁数を減らす", () => {
+    expect(formatAxisYen(200_000_000, true)).toBe("2億");
+    expect(formatAxisYen(285_000_000, true)).toBe("2.9億");
+  });
+
+  test("狭い画面でも1億円未満は万円単位のまま", () => {
+    expect(formatAxisYen(99_990_000, true)).toBe("9,999万");
+  });
+
+  test("0は符号なしの0万", () => {
+    expect(formatAxisYen(0, true)).toBe("0万");
+    expect(formatAxisYen(-3_000, true)).toBe("0万");
+  });
+
+  test("負の目盛りにはマイナスが付く", () => {
+    expect(formatAxisYen(-5_000_000, false)).toBe("-500万");
+    expect(formatAxisYen(-200_000_000, true)).toBe("-2億");
   });
 });
 
