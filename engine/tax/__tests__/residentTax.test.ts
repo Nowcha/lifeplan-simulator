@@ -9,7 +9,9 @@
  *   https://www.tax.metro.tokyo.lg.jp/kazei/life/kojin_ju (確認日 2026-07-25)
  * - 住民税の扶養控除(令和8年度以降): 16歳未満=なし、一般33万円、特定(19〜23歳未満)45万円。
  *   https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/5105.html (確認日 2026-07-25)
- * - 調整控除の人的控除額の差: 基礎5万・配偶者5万・扶養 一般5万/特定18万。
+ * - 調整控除の人的控除額の差: 基礎5万・扶養 一般5万/特定18万。
+ *   配偶者控除の差は本人の合計所得金額により 5万(900万円以下)/4万(900万円超950万円以下)/
+ *   2万(950万円超1,000万円以下)と段階的に縮む。
  *   https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/zeikoujo.html (確認日 2026-07-25)
  */
 
@@ -17,6 +19,7 @@ import { describe, expect, test } from "vitest";
 import rules2026 from "../../../rules/2026.json";
 import type { RuleSet } from "../../types/index.js";
 import { computeResidentTax, nonTaxableThresholds } from "../residentTax.js";
+import { stepAmount } from "../rounding.js";
 
 const rules = (rules2026 as unknown as RuleSet).residentTax;
 const PER_CAPITA = 5000; // 区民税3,000 + 都民税1,000 + 森林環境税1,000
@@ -137,5 +140,82 @@ describe("扶養控除と調整控除", () => {
     expect(general.adjustmentCredit).toBe(5000);
     // +特定18万 → 23万×5% = 11,500円
     expect(specific.adjustmentCredit).toBe(11500);
+  });
+});
+
+describe("調整控除における配偶者控除の人的控除額の差", () => {
+  // 一次情報: 江東区・税額控除の種類(調整控除の人的控除額の差)
+  // https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/zeikoujo.html (確認日 2026-07-25)
+  // 所得税の配偶者控除 38万/26万/13万 − 住民税の配偶者控除 33万/22万/11万 = 5万/4万/2万。
+  const gapSteps = rules.adjustmentCredit.spouseDeductionGap.steps;
+
+  test("段階表は本人の合計所得金額で 5万/4万/2万 と縮み、1,000万円超は0", () => {
+    expect(stepAmount(gapSteps, 9000000)).toBe(50000);
+    expect(stepAmount(gapSteps, 9000001)).toBe(40000);
+    expect(stepAmount(gapSteps, 9500000)).toBe(40000);
+    expect(stepAmount(gapSteps, 9500001)).toBe(20000);
+    expect(stepAmount(gapSteps, 10000000)).toBe(20000);
+    expect(stepAmount(gapSteps, 10000001)).toBe(0);
+  });
+
+  describe("computeResidentTax への反映", () => {
+    // 200万円超の区分では調整控除が最低額2,500円に張り付き、差の大小が結果に現れない。
+    // 段階が効いていることを確認するため、社会保険料を故意に大きく置いて課税所得を
+    // ちょうど200万円(=threshold)に揃え、差だけが調整控除を動かす状況を作る。
+    // 課税所得200万円以下の区分: 調整控除 = min(差の合計, 課税所得) × 5%
+    const atTaxable2M = (totalIncome: number, socialInsurancePaid: number) =>
+      computeResidentTax({ totalIncome, socialInsurancePaid, spouseTotalIncome: 0, rules });
+
+    test("900万円以下は差5万 → 基礎5万と合わせて10万×5% = 5,000円", () => {
+      // 900万 −(社保624万 + 基礎43万 + 配偶者33万) = 200万
+      const r = atTaxable2M(9000000, 6240000);
+
+      expect(r.taxableIncome).toBe(2000000);
+      expect(r.adjustmentCredit).toBe(5000);
+    });
+
+    test("900万円超950万円以下は差4万 → 9万×5% = 4,500円", () => {
+      // 950万 −(社保685万 + 基礎43万 + 配偶者22万) = 200万
+      const r = atTaxable2M(9500000, 6850000);
+
+      expect(r.taxableIncome).toBe(2000000);
+      expect(r.adjustmentCredit).toBe(4500);
+    });
+
+    test("950万円超1,000万円以下は差2万 → 7万×5% = 3,500円", () => {
+      // 1,000万 −(社保746万 + 基礎43万 + 配偶者11万) = 200万
+      const r = atTaxable2M(10000000, 7460000);
+
+      expect(r.taxableIncome).toBe(2000000);
+      expect(r.adjustmentCredit).toBe(3500);
+    });
+
+    test("1,000万円超は配偶者控除自体が無く、差も乗らない(基礎5万のみ)", () => {
+      // 1,050万 −(社保807万 + 基礎43万 + 配偶者0) = 200万
+      const r = atTaxable2M(10500000, 8070000);
+
+      expect(r.taxableIncome).toBe(2000000);
+      expect(r.adjustmentCredit).toBe(2500);
+    });
+  });
+
+  test("現実的な社会保険料の高所得世帯では、差の段階に関わらず最低額2,500円に張り付く", () => {
+    // 課税所得が200万円を大きく超えるため {差 −(課税所得 − 200万)} が負になり最低額が適用される。
+    // 段階化は法令上の正確性のための修正であり、この帯では税額を変えない。
+    const under900 = computeResidentTax({
+      totalIncome: 8900000,
+      socialInsurancePaid: 1300000,
+      spouseTotalIncome: 0,
+      rules
+    });
+    const over900 = computeResidentTax({
+      totalIncome: 9500000,
+      socialInsurancePaid: 1300000,
+      spouseTotalIncome: 0,
+      rules
+    });
+
+    expect(under900.adjustmentCredit).toBe(2500);
+    expect(over900.adjustmentCredit).toBe(2500);
   });
 });

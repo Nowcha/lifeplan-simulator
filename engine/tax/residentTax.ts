@@ -87,14 +87,15 @@ export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
     1000
   );
 
-  // 調整控除: 人的控除差(基礎5万 + 配偶者5万 + 扶養 一般5万/特定18万)に基づく
+  // 調整控除: 人的控除差(基礎5万 + 配偶者5万/4万/2万 + 扶養 一般5万/特定18万)に基づく。
+  // 配偶者控除の差は本人の合計所得金額で段階的に縮む(900万超で4万、950万超で2万)。
   const ac = rules.adjustmentCredit;
   const counts = classifyDependents(dependentAges, rules.dependentDeduction);
   let adjustmentCredit = 0;
   if (totalIncome <= ac.incomeLimit && taxableIncome > 0) {
     const gap =
       ac.basicDeductionGap +
-      (spouse > 0 ? ac.spouseDeductionGap : 0) +
+      (spouse > 0 ? stepAmount(ac.spouseDeductionGap.steps, totalIncome) : 0) +
       counts.general * ac.generalDependentGap +
       counts.specific * ac.specificDependentGap;
     const rateTotal = ac.rateCity + ac.ratePref;

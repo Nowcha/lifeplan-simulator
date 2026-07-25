@@ -71,7 +71,12 @@ export interface ResidentTaxRules {
   /** 調整控除 (personal-deduction gap credit) */
   adjustmentCredit: {
     basicDeductionGap: Yen;
-    spouseDeductionGap: Yen;
+    /**
+     * 配偶者控除の人的控除額の差 (所得税38/26/13万 − 住民税33/22/11万) は
+     * 納税者本人の合計所得金額で段階的に 5万/4万/2万 と変わる。
+     * ステップは `spouseDeduction.steps` と同じ境界だが金額だけが異なる。
+     */
+    spouseDeductionGap: { steps: { incomeUpTo: Yen | null; amount: Yen }[] };
     /** 人的控除額の差 per dependent: 一般 5万 (38万-33万) / 特定 18万 (63万-45万) */
     generalDependentGap: Yen;
     specificDependentGap: Yen;
