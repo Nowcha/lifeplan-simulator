@@ -36,6 +36,7 @@ cd app
 npm install
 npm run dev      # 開発サーバー起動
 npm run build    # 型チェック + 本番ビルド
+npm test         # src/lib/ の純粋ロジックのユニットテスト
 npm run lint     # oxlint
 ```
 
