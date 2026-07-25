@@ -66,7 +66,7 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
               onRemove={() => {
                 const removed = getValues(`assumptions.assetClasses.${index}`)
                 assetClasses.remove(index)
-                pushUndo(`資産クラス${index + 1}`, () => assetClasses.insert(index, removed))
+                pushUndo(`「資産クラス${index + 1}」を削除しました。`, () => assetClasses.insert(index, removed))
               }}
               getRemoveWarning={() =>
                 describeReferences(getValues(), {

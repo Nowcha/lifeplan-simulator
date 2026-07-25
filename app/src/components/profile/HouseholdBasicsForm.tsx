@@ -61,7 +61,7 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
               onRemove={() => {
                 const removed = getValues(`household.persons.${index}`)
                 persons.remove(index)
-                pushUndo(`本人${index + 1}`, () => persons.insert(index, removed))
+                pushUndo(`「本人${index + 1}」を削除しました。`, () => persons.insert(index, removed))
               }}
               getRemoveWarning={() =>
                 describeReferences(getValues(), { kind: 'person', id: getValues(`household.persons.${index}.id`) })
@@ -91,7 +91,7 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
               onRemove={() => {
                 const removed = getValues(`household.children.${index}`)
                 children.remove(index)
-                pushUndo(`子ども${index + 1}`, () => children.insert(index, removed))
+                pushUndo(`「子ども${index + 1}」を削除しました。`, () => children.insert(index, removed))
               }}
               getRemoveWarning={() =>
                 describeReferences(getValues(), { kind: 'child', id: getValues(`household.children.${index}.id`) })

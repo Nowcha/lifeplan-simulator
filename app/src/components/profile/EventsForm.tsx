@@ -126,7 +126,7 @@ export function EventsForm({ control, register, setValue }: EventsFormProps) {
                   const label = `${EVENT_LABELS[type] ?? type}${typeCounters[type] ?? ''}`
                   const removed = getValues(`events.${index}`)
                   events.remove(index)
-                  pushUndo(label, () => events.insert(index, removed))
+                  pushUndo(`「${label}」を削除しました。`, () => events.insert(index, removed))
                 }}
                 getRemoveWarning={() => describeEventRemoval(getValues(), index)}
               >

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { UndoContext } from './undoContext'
 
 /**
- * 直前の削除を1件だけ取り消せるようにする。
+ * 直前の取り消し可能な操作(削除・参照の一括更新など)を1件だけ戻せるようにする。
  *
  * フォーム全体をスナップショットして reset() で戻す方式は実装が簡単だが、
  * 削除後に別の編集をしてから取り消すとその編集まで巻き戻る。ここでは
@@ -11,7 +11,7 @@ import { UndoContext } from './undoContext'
  */
 
 interface UndoEntry {
-  label: string
+  message: string
   undo: () => void
 }
 
@@ -21,8 +21,8 @@ const UNDO_TIMEOUT_MS = 12_000
 export function UndoProvider({ children }: { children: (banner: ReactNode) => ReactNode }) {
   const [entry, setEntry] = useState<UndoEntry | null>(null)
 
-  const pushUndo = useCallback((label: string, undo: () => void) => {
-    setEntry({ label, undo })
+  const pushUndo = useCallback((message: string, undo: () => void) => {
+    setEntry({ message, undo })
   }, [])
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export function UndoProvider({ children }: { children: (banner: ReactNode) => Re
         aria-live="polite"
         className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-sm border border-hairline-strong bg-surface-2 px-4 py-3 text-sm"
       >
-        <span className="text-ink-secondary">「{entry.label}」を削除しました。</span>
+        <span className="text-ink-secondary">{entry.message}</span>
         <button
           type="button"
           onClick={() => {

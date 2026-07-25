@@ -1,9 +1,10 @@
+import { useRef, type FocusEvent } from 'react'
 import { useFieldArray, useFormContext, type Control, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, HelpBadge, ItemCard, MonthInput, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
 import { AssetClassPicker } from './pickers'
-import { describeReferences } from '../../lib/references'
+import { describeReferences, renameExpenseLabelReferences } from '../../lib/references'
 import { useUndo } from '../../lib/undoContext'
 import { numberRules, optionalNumberRules, optionalYearMonthRules, requiredTextRules } from '../../lib/validation'
 import {
@@ -30,6 +31,34 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
   const contributions = useFieldArray({ control, name: 'household.savingsPolicy.contributions' })
   const { getValues } = useFormContext<ProfileFormValues>()
   const { pushUndo } = useUndo()
+  // 費目名は住宅購入イベントから「名前で」参照される唯一の項目。リネームすると
+  // 参照が黙って切れるため、フォーカス時の値を覚えてblurで差分を見る。
+  const renamingFrom = useRef('')
+
+  function labelFieldProps(index: number) {
+    const field = register(`household.baseExpenses.${index}.label`, requiredTextRules)
+    return {
+      ...field,
+      onFocus: (e: FocusEvent<HTMLInputElement>) => {
+        renamingFrom.current = e.target.value
+      },
+      onBlur: (e: FocusEvent<HTMLInputElement>) => {
+        void field.onBlur(e)
+        applyLabelRename(renamingFrom.current, e.target.value)
+      }
+    }
+  }
+
+  /** 参照側も同時に書き換え、黙って変えないよう取り消し可能な通知を出す */
+  function applyLabelRename(oldLabel: string, newLabel: string): void {
+    const previous = getValues('events')
+    const { events, changed } = renameExpenseLabelReferences(previous, oldLabel, newLabel)
+    if (changed === 0) return
+    setValue('events', events)
+    pushUndo(`費目名の変更に合わせて、住宅購入イベントの参照${changed}件を更新しました。`, () =>
+      setValue('events', previous)
+    )
+  }
   const drawdownOrder = usePrimitiveArrayField<ProfileFormValues, (typeof DRAWDOWN_ACCOUNT_OPTIONS)[number]['value']>(
     control,
     'household.savingsPolicy.drawdown.order',
@@ -56,7 +85,7 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
               onRemove={() => {
                 const removed = getValues(`household.baseExpenses.${index}`)
                 baseExpenses.remove(index)
-                pushUndo(`費目${index + 1}`, () => baseExpenses.insert(index, removed))
+                pushUndo(`「費目${index + 1}」を削除しました。`, () => baseExpenses.insert(index, removed))
               }}
               getRemoveWarning={() =>
                 describeReferences(getValues(), {
@@ -66,7 +95,7 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
               }
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <TextInput label="項目名" {...register(`household.baseExpenses.${index}.label`, requiredTextRules)} />
+                <TextInput label="項目名" {...labelFieldProps(index)} />
                 <NumberInput
                   label="月額"
                   suffix="円"
@@ -112,7 +141,7 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
               onRemove={() => {
                 const removed = getValues(`household.financialAssets.${index}`)
                 financialAssets.remove(index)
-                pushUndo(`資産${index + 1}`, () => financialAssets.insert(index, removed))
+                pushUndo(`「資産${index + 1}」を削除しました。`, () => financialAssets.insert(index, removed))
               }}
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -173,7 +202,7 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
                   onRemove={() => {
                     const removed = getValues(`household.savingsPolicy.contributions.${index}`)
                     contributions.remove(index)
-                    pushUndo(`積立${index + 1}`, () => contributions.insert(index, removed))
+                    pushUndo(`「積立${index + 1}」を削除しました。`, () => contributions.insert(index, removed))
                   }}
                 >
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

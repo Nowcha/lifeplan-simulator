@@ -13,7 +13,7 @@ import {
 } from '../../lib/educationCost'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput, TextInput } from '../form/fields'
-import { ChildPicker, LoanPicker, PersonPicker } from './pickers'
+import { ChildPicker, ExpenseLabelPicker, LoanPicker, PersonPicker } from './pickers'
 import { describeReferences } from '../../lib/references'
 import { useUndo } from '../../lib/undoContext'
 import {
@@ -182,17 +182,23 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
       </div>
 
       <div>
-        <span className="text-xs tracking-wide text-ink-muted uppercase">この購入で終了する基本生活費(項目名)</span>
+        <span className="text-xs tracking-wide text-ink-muted uppercase">この購入で終了する基本生活費</span>
         <div className="mt-2 flex flex-col gap-2">
           {terminatesLabels.value.map((label, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <input
-                value={label}
-                onChange={(e) => terminatesLabels.update(i, e.target.value)}
-                className="min-h-11 w-full rounded-sm border border-hairline-strong bg-surface px-3 py-1.5 text-base text-ink outline-none focus:border-amber-500 sm:min-h-0 sm:text-sm"
-                placeholder="住居費(賃貸)"
-              />
-              <button type="button" onClick={() => terminatesLabels.remove(i)} className="text-xs text-ink-muted hover:text-critical">
+            <div key={i} className="flex items-end gap-3">
+              <div className="w-full">
+                <ExpenseLabelPicker
+                  control={control}
+                  label=""
+                  value={label}
+                  onChange={(next) => terminatesLabels.update(i, next)}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => terminatesLabels.remove(i)}
+                className="min-h-11 shrink-0 px-2 pb-2 text-xs text-ink-muted hover:text-critical sm:min-h-0"
+              >
                 削除
               </button>
             </div>
@@ -231,7 +237,7 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
               onRemove={() => {
                 const removed = getValues(eventPath(index, `loans.${loanIndex}`))
                 loans.remove(loanIndex)
-                pushUndo(`ローン${loanIndex + 1}`, () => loans.insert(loanIndex, removed as never))
+                pushUndo(`「ローン${loanIndex + 1}」を削除しました。`, () => loans.insert(loanIndex, removed as never))
               }}
               getRemoveWarning={() =>
                 describeReferences(getValues(), {

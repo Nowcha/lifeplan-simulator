@@ -6,8 +6,12 @@ import { createContext, useContext } from 'react'
  * Fast Refresh が効かなくなり、編集のたびにフックの順序不一致が起きるため。
  */
 export interface UndoContextValue {
-  /** 削除の直後に呼ぶ。`undo` は削除した要素を元の位置に差し戻す関数。 */
-  pushUndo: (label: string, undo: () => void) => void
+  /**
+   * 取り消せる操作の直後に呼ぶ。`message` は「何が起きたか」の一文をそのまま渡す
+   * (削除以外にも使うため、文言の組み立ては呼び出し側の責務)。
+   * `undo` はその操作を打ち消す関数。
+   */
+  pushUndo: (message: string, undo: () => void) => void
 }
 
 export const UndoContext = createContext<UndoContextValue | null>(null)

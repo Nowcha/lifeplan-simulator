@@ -57,6 +57,33 @@ export const EducationEventPicker = forwardRef<HTMLSelectElement, PickerProps>(f
   return <SelectInput ref={ref} options={[PLACEHOLDER, ...options]} {...props} />
 })
 
+/**
+ * 基本生活費を「名前で」選ぶ。他のピッカーと違い値が id ではなく表示名そのもの
+ * (terminatesExpenseLabels がスキーマ上そう定義されているため)。
+ * 一覧に無い値は黙って消さず「存在しません」と明示して残す — 過去データや
+ * リネーム漏れで壊れた参照を、画面上で見えるようにするため。
+ */
+export function ExpenseLabelPicker({
+  control,
+  value,
+  onChange,
+  label
+}: {
+  control: Control<ProfileFormValues>
+  value: string
+  onChange: (value: string) => void
+  label: string
+}) {
+  const expenses = useWatch({ control, name: 'household.baseExpenses' }) ?? []
+  const known = [...new Set(expenses.map((e) => e?.label ?? '').filter((l) => l !== ''))]
+  const options = [PLACEHOLDER, ...known.map((l) => ({ value: l, label: l }))]
+  if (value !== '' && !known.includes(value)) {
+    options.push({ value, label: `${value}(この費目は存在しません)` })
+  }
+
+  return <SelectInput label={label} options={options} value={value} onChange={(e) => onChange(e.target.value)} />
+}
+
 export const LoanPicker = forwardRef<HTMLSelectElement, PickerProps>(function LoanPicker({ control, ...props }, ref) {
   const events = useWatch({ control, name: 'events' }) ?? []
   const loans = events.filter((e) => e?.type === 'housing-purchase').flatMap((e) => e.loans ?? [])
