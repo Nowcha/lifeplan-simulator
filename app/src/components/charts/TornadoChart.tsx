@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { formatAxisYen, formatManYen } from '../../lib/format'
 import { useContainerWidth } from '../../lib/useContainerWidth'
+import { tornadoChartLayout } from '../../lib/chartLayout'
 
 export interface TornadoDatum {
   factor: string
@@ -15,28 +16,6 @@ interface TornadoChartProps {
   factorLabel: (factor: string) => string
 }
 
-const NARROW_BREAKPOINT = 560
-const MIN_WIDTH = 280
-
-/**
- * 狭い画面では要因名を棒の左に置けない(左余白140pxを確保すると棒がほぼ残らない)。
- * 名前を棒の上、金額を棒の下に積む縦積みレイアウトへ切り替える。
- */
-function layoutFor(width: number): {
-  margin: { top: number; right: number; bottom: number; left: number }
-  rowHeight: number
-  isNarrow: boolean
-} {
-  const isNarrow = width < NARROW_BREAKPOINT
-  return {
-    margin: isNarrow
-      ? { top: 8, right: 8, bottom: 28, left: 8 }
-      : { top: 8, right: 16, bottom: 28, left: 140 },
-    rowHeight: isNarrow ? 68 : 44,
-    isNarrow
-  }
-}
-
 export function TornadoChart({ data, baseline, factorLabel }: TornadoChartProps) {
   const sorted = useMemo(
     () => [...data].sort((a, b) => Math.abs(b.high - b.low) - Math.abs(a.high - a.low)),
@@ -44,8 +23,7 @@ export function TornadoChart({ data, baseline, factorLabel }: TornadoChartProps)
   )
   const [containerRef, containerWidth] = useContainerWidth<HTMLDivElement>()
 
-  const WIDTH = Math.max(MIN_WIDTH, containerWidth)
-  const { margin: MARGIN, rowHeight: ROW_HEIGHT, isNarrow } = layoutFor(WIDTH)
+  const { width: WIDTH, margin: MARGIN, rowHeight: ROW_HEIGHT, isNarrow } = tornadoChartLayout(containerWidth)
   const plotWidth = WIDTH - MARGIN.left - MARGIN.right
   const plotHeight = sorted.length * ROW_HEIGHT
   const height = plotHeight + MARGIN.top + MARGIN.bottom

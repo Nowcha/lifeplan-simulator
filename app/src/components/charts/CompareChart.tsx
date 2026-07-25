@@ -1,6 +1,7 @@
 import { useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { formatAxisYen, formatManYen } from '../../lib/format'
 import { useContainerWidth } from '../../lib/useContainerWidth'
+import { niceTicks, timeSeriesChartLayout, xTickInterval } from '../../lib/chartLayout'
 
 export interface CompareSeries {
   id: string
@@ -14,44 +15,13 @@ interface CompareChartProps {
   series: CompareSeries[]
 }
 
-const NARROW_BREAKPOINT = 560
-const MIN_WIDTH = 280
-
-/** FanChart と同じ考え方: viewBox を実ピクセル幅と1:1にして軸ラベルの可読性を保つ */
-function layoutFor(width: number): {
-  height: number
-  margin: { top: number; right: number; bottom: number; left: number }
-  isNarrow: boolean
-} {
-  const isNarrow = width < NARROW_BREAKPOINT
-  return {
-    height: isNarrow ? 260 : 380,
-    margin: isNarrow
-      ? { top: 12, right: 8, bottom: 28, left: 48 }
-      : { top: 16, right: 16, bottom: 32, left: 72 },
-    isNarrow
-  }
-}
-
-function niceTicks(min: number, max: number, count: number): number[] {
-  if (min === max) return [min]
-  const rawStep = (max - min) / count
-  const magnitude = 10 ** Math.floor(Math.log10(rawStep))
-  const residual = rawStep / magnitude
-  const step = (residual > 5 ? 10 : residual > 2 ? 5 : residual > 1 ? 2 : 1) * magnitude
-  const start = Math.ceil(min / step) * step
-  const ticks: number[] = []
-  for (let v = start; v <= max; v += step) ticks.push(v)
-  return ticks
-}
-
 export function CompareChart({ series }: CompareChartProps) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
   const [containerRef, containerWidth] = useContainerWidth<HTMLDivElement>()
   const years = series[0]?.years ?? []
 
-  const WIDTH = Math.max(MIN_WIDTH, containerWidth)
-  const { height: HEIGHT, margin: MARGIN, isNarrow } = layoutFor(WIDTH)
+  const { width: WIDTH, height: HEIGHT, margin: MARGIN, isNarrow, yTickCount, xTickCount } =
+    timeSeriesChartLayout(containerWidth)
   const plotWidth = WIDTH - MARGIN.left - MARGIN.right
   const plotHeight = HEIGHT - MARGIN.top - MARGIN.bottom
 
@@ -66,12 +36,12 @@ export function CompareChart({ series }: CompareChartProps) {
     const xScale = (i: number): number => (years.length <= 1 ? 0 : (i / (years.length - 1)) * plotWidth)
     const yScale = (v: number): number => plotHeight - ((v - minY) / (maxY - minY)) * plotHeight
 
-    return { minY, maxY, x: xScale, y: yScale, yTicks: niceTicks(minY, maxY, isNarrow ? 4 : 5) }
-  }, [series, years.length, plotWidth, plotHeight, isNarrow])
+    return { minY, maxY, x: xScale, y: yScale, yTicks: niceTicks(minY, maxY, yTickCount) }
+  }, [series, years.length, plotWidth, plotHeight, yTickCount])
 
   const linePath = (values: number[]): string => values.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(v)}`).join(' ')
 
-  const xTickEvery = Math.max(1, Math.ceil(years.length / (isNarrow ? 4 : 8)))
+  const xTickEvery = xTickInterval(years.length, xTickCount)
   const hovered = hoverIndex
 
   /** マウスはホバー、タッチはタップ/横スクラブ(縦スクロールは pan-y で維持) */
