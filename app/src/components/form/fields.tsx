@@ -1,6 +1,13 @@
-import { forwardRef, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
+import { forwardRef, useId, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
 import { useFormState } from 'react-hook-form'
 import { fieldErrorMessage } from '../../lib/fieldError'
+
+/** Field が入力要素に渡す属性。各入力ラッパーはこれをそのまま展開する。 */
+export interface FieldControlAttributes {
+  id: string
+  'aria-describedby': string | undefined
+  'aria-invalid': true | undefined
+}
 
 interface FieldProps {
   label: string
@@ -13,37 +20,51 @@ interface FieldProps {
    * FormProvider から自分で取りに行く(呼び出し側でerrorsを配線しなくてよい)。
    */
   name?: string
-  children: ReactNode
+  children: (control: FieldControlAttributes) => ReactNode
 }
 
-export function Field({ label, hint, error, help, name, children }: FieldProps) {
-  return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="flex items-center gap-1.5 text-ink-secondary">
-        {label}
-        {help && <HelpBadge text={help} />}
-      </span>
-      {children}
-      {/* name の有無でフックの呼び出し有無が変わらないよう、別コンポーネントに分ける */}
-      {name === undefined ? (
-        <FieldFeedback hint={hint} error={error} />
-      ) : (
-        <BoundFieldFeedback name={name} hint={hint} error={error} />
-      )}
-    </label>
-  )
-}
-
-function FieldFeedback({ hint, error }: { hint?: string; error?: string }) {
-  if (error !== undefined) return <span className="text-xs text-critical">{error}</span>
-  if (hint !== undefined) return <span className="text-xs text-ink-muted">{hint}</span>
-  return null
+export function Field({ name, ...rest }: FieldProps) {
+  // name の有無でフックの呼び出し有無が変わらないよう、別コンポーネントに分ける
+  return name === undefined ? <FieldShell {...rest} /> : <BoundField name={name} {...rest} />
 }
 
 /** フォーム状態から自分のエラーだけを購読する(name指定なので他フィールドの変化では再描画されない) */
-function BoundFieldFeedback({ name, hint, error }: { name: string; hint?: string; error?: string }) {
+function BoundField({ name, error, ...rest }: FieldProps & { name: string }) {
   const { errors } = useFormState({ name: name as never })
-  return <FieldFeedback hint={hint} error={error ?? fieldErrorMessage(errors, name)} />
+  return <FieldShell {...rest} error={error ?? fieldErrorMessage(errors, name)} />
+}
+
+/**
+ * ラベル・入力・補足/エラーの土台。
+ *
+ * 以前は <label> が入力とhint/エラーを丸ごと包んでいたため、それらがすべて
+ * 入力のアクセシブル名に連結されていた(「項目名 表示名として使われます」)。
+ * 名前は <label htmlFor> だけが与え、hint/エラーは aria-describedby で
+ * 「説明」として関連付ける。エラー時は aria-invalid も立てる。
+ */
+function FieldShell({ label, hint, error, help, children }: Omit<FieldProps, 'name'>) {
+  const id = useId()
+  const feedbackId = `${id}-feedback`
+  const feedback = error ?? hint
+
+  return (
+    <div className="flex flex-col gap-1 text-sm">
+      <span className="flex items-center gap-1.5 text-ink-secondary">
+        <label htmlFor={id}>{label}</label>
+        {help && <HelpBadge text={help} />}
+      </span>
+      {children({
+        id,
+        'aria-describedby': feedback === undefined ? undefined : feedbackId,
+        'aria-invalid': error === undefined ? undefined : true
+      })}
+      {feedback !== undefined && (
+        <span id={feedbackId} className={error === undefined ? 'text-xs text-ink-muted' : 'text-xs text-critical'}>
+          {feedback}
+        </span>
+      )}
+    </div>
+  )
 }
 
 export function HelpBadge({ text }: { text: string }) {
@@ -99,7 +120,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
 ) {
   return (
     <Field label={label} hint={hint} error={error} help={help} name={props.name}>
-      <input ref={ref} className={`${inputClass} ${className ?? ''}`} {...props} />
+      {(control) => <input ref={ref} className={`${inputClass} ${className ?? ''}`} {...props} {...control} />}
     </Field>
   )
 })
@@ -118,7 +139,7 @@ export const MonthInput = forwardRef<HTMLInputElement, MonthInputProps>(function
 ) {
   return (
     <Field label={label} hint={hint} error={error} help={help} name={props.name}>
-      <input ref={ref} type="month" className={`${inputClass} ${className ?? ''}`} {...props} />
+      {(control) => <input ref={ref} type="month" className={`${inputClass} ${className ?? ''}`} {...props} {...control} />}
     </Field>
   )
 })
@@ -137,10 +158,12 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
 ) {
   return (
     <Field label={label} hint={hint} error={error} help={help} name={props.name}>
-      <div className="flex items-center gap-2">
-        <input ref={ref} type="number" className={`${inputClass} ${className ?? ''}`} {...props} />
-        {suffix && <span className="shrink-0 text-xs text-ink-muted">{suffix}</span>}
-      </div>
+      {(control) => (
+        <div className="flex items-center gap-2">
+          <input ref={ref} type="number" className={`${inputClass} ${className ?? ''}`} {...props} {...control} />
+          {suffix && <span className="shrink-0 text-xs text-ink-muted">{suffix}</span>}
+        </div>
+      )}
     </Field>
   )
 })
@@ -159,13 +182,15 @@ export const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(funct
 ) {
   return (
     <Field label={label} hint={hint} error={error} help={help} name={props.name}>
-      <select ref={ref} className={`${inputClass} ${className ?? ''}`} {...props}>
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+      {(control) => (
+        <select ref={ref} className={`${inputClass} ${className ?? ''}`} {...props} {...control}>
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      )}
     </Field>
   )
 })

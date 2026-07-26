@@ -96,9 +96,7 @@ describe('フィールドのエラー表示', () => {
       </Harness>
     )
 
-    // hint も同じ <label> の中にあるため、アクセシブル名は「項目名 …」になる。
-    // 現状のマークアップに合わせて部分一致で引く。
-    await user.clear(screen.getByRole('textbox', { name: /項目名/ }))
+    await user.clear(screen.getByLabelText('項目名'))
     await user.click(screen.getByRole('button', { name: '送信' }))
 
     await waitFor(() => expect(screen.getByText('入力してください')).toBeDefined())
@@ -113,6 +111,84 @@ describe('フィールドのエラー表示', () => {
     )
 
     expect(screen.getByText('外から渡したエラー')).toBeDefined()
+  })
+
+  test('アクセシブル名はラベルだけ(hintやエラーが混ざらない)', async () => {
+    const user = userEvent.setup()
+    render(
+      <Harness>
+        {(form) => (
+          <TextInput label="項目名" hint="表示名として使われます" {...form.register('label', requiredTextRules)} />
+        )}
+      </Harness>
+    )
+
+    // hint がある状態でも完全一致で引ける
+    const input = screen.getByLabelText('項目名')
+
+    await user.clear(input)
+    await user.click(screen.getByRole('button', { name: '送信' }))
+    await waitFor(() => expect(screen.getByText('入力してください')).toBeDefined())
+
+    // エラー表示後も名前は変わらない
+    expect(screen.getByLabelText('項目名')).toBe(input)
+  })
+
+  test('hint と エラーは aria-describedby で説明として関連付ける', async () => {
+    const user = userEvent.setup()
+    render(
+      <Harness>
+        {(form) => (
+          <TextInput label="項目名" hint="表示名として使われます" {...form.register('label', requiredTextRules)} />
+        )}
+      </Harness>
+    )
+
+    const input = screen.getByLabelText('項目名')
+    const hintId = input.getAttribute('aria-describedby')
+    expect(hintId).not.toBeNull()
+    expect(document.getElementById(hintId ?? '')?.textContent).toBe('表示名として使われます')
+
+    await user.clear(input)
+    await user.click(screen.getByRole('button', { name: '送信' }))
+
+    await waitFor(() =>
+      expect(document.getElementById(input.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
+        '入力してください'
+      )
+    )
+  })
+
+  test('エラー時だけ aria-invalid が立つ', async () => {
+    const user = userEvent.setup()
+    render(
+      <Harness>
+        {(form) => <TextInput label="項目名" {...form.register('label', requiredTextRules)} />}
+      </Harness>
+    )
+
+    const input = screen.getByLabelText('項目名')
+    expect(input.getAttribute('aria-invalid')).toBeNull()
+
+    await user.clear(input)
+    await user.click(screen.getByRole('button', { name: '送信' }))
+
+    await waitFor(() => expect(screen.getByLabelText('項目名').getAttribute('aria-invalid')).toBe('true'))
+  })
+
+  test('hint もエラーも無ければ aria-describedby は付けない', () => {
+    render(<Harness>{(form) => <TextInput label="項目名" {...form.register('label')} />}</Harness>)
+
+    expect(screen.getByLabelText('項目名').getAttribute('aria-describedby')).toBeNull()
+  })
+
+  test('ラベルをクリックすると入力にフォーカスが移る', async () => {
+    const user = userEvent.setup()
+    render(<Harness>{(form) => <TextInput label="項目名" {...form.register('label')} />}</Harness>)
+
+    await user.click(screen.getByText('項目名'))
+
+    expect(document.activeElement).toBe(screen.getByLabelText('項目名'))
   })
 
   test('エラーは該当フィールドにだけ出る(他フィールドに漏れない)', async () => {

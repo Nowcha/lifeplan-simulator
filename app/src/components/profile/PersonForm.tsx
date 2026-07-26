@@ -46,7 +46,7 @@ export function PersonForm({ index, control, register, onRemove, getRemoveWarnin
         />
         <NumberInput
           label="組合健保 労使折半率(任意)"
-          hint="healthInsurance=組合健保のときのみ使用"
+          hint="「健康保険」で組合健保を選んだときだけ使われます"
           step="0.001"
           {...register(`${path}.employment.kumiaiRate`, optionalNumberRules({ min: 0, max: 1 }))}
         />

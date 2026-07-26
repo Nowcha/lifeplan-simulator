@@ -81,7 +81,15 @@ export function ExpenseLabelPicker({
     options.push({ value, label: `${value}(この費目は存在しません)` })
   }
 
-  return <SelectInput label={label} options={options} value={value} onChange={(e) => onChange(e.target.value)} />
+  return (
+    <SelectInput
+      label={label}
+      aria-label={label === '' ? '終了する基本生活費' : undefined}
+      options={options}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  )
 }
 
 export const LoanPicker = forwardRef<HTMLSelectElement, PickerProps>(function LoanPicker({ control, ...props }, ref) {
