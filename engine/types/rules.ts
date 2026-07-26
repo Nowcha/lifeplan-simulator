@@ -45,8 +45,12 @@ export type SalaryIncomePiece =
 export interface SpouseDeductionRules {
   /** Spouse qualifies while spouse 合計所得金額 <= this */
   spouseIncomeMax: Yen;
+  /** 老人控除対象配偶者の年齢下限 (70, その年12/31時点) */
+  elderlyFromAge: number;
   /** Deduction by taxpayer's own 合計所得金額 */
   steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[];
+  /** 老人控除対象配偶者の控除額 (所得税 48/32/16万, 住民税 38/26/13万) */
+  elderlySteps: { ownerIncomeUpTo: Yen | null; amount: Yen }[];
   _source?: RuleSource;
 }
 
@@ -98,6 +102,8 @@ export interface ResidentTaxRules {
      * ステップは `spouseDeduction.steps` と同じ境界だが金額だけが異なる。
      */
     spouseDeductionGap: { steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[] };
+    /** 老人配偶者の人的控除額の差 (10万/6万/3万) */
+    spouseElderlyDeductionGap: { steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[] };
     /**
      * 人的控除額の差 per dependent: 一般 5万 (38万-33万) / 特定 18万 (63万-45万) /
      * 老人 10万 (48万-38万) / 同居老親等 13万 (58万-45万)

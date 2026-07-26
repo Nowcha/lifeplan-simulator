@@ -12,8 +12,11 @@
 import type { SpouseDeductionRules, SpouseSpecialDeductionRules, Yen } from "../types/index.js";
 import { stepAmount } from "./rounding.js";
 
-/** どちらの控除が適用されたか。調整控除は "ordinary" のときだけ差が乗る。 */
-export type SpouseDeductionKind = "none" | "ordinary" | "special";
+/**
+ * どの控除が適用されたか。調整控除の人的控除額の差は "ordinary"(一般の配偶者控除)と
+ * "elderly"(老人控除対象配偶者)で額が違い、"special"(配偶者特別控除)には乗らない。
+ */
+export type SpouseDeductionKind = "none" | "ordinary" | "elderly" | "special";
 
 export interface SpouseDeductionResult {
   amount: Yen;
@@ -43,12 +46,17 @@ export function spouseDeduction(
   ownerTotalIncome: Yen,
   spouseTotalIncome: Yen | undefined,
   ordinary: SpouseDeductionRules,
-  special: SpouseSpecialDeductionRules
+  special: SpouseSpecialDeductionRules,
+  /** 配偶者のその年12/31時点の年齢。老人控除対象配偶者の判定に使う */
+  spouseAge?: number
 ): SpouseDeductionResult {
   if (spouseTotalIncome === undefined) return NONE;
 
   if (spouseTotalIncome <= ordinary.spouseIncomeMax) {
-    return { amount: stepAmount(ordinary.steps, ownerTotalIncome), kind: "ordinary" };
+    const isElderly = spouseAge !== undefined && spouseAge >= ordinary.elderlyFromAge;
+    return isElderly
+      ? { amount: stepAmount(ordinary.elderlySteps, ownerTotalIncome), kind: "elderly" }
+      : { amount: stepAmount(ordinary.steps, ownerTotalIncome), kind: "ordinary" };
   }
 
   if (spouseTotalIncome <= special.spouseIncomeMax) {

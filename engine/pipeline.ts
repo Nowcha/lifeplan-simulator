@@ -545,12 +545,14 @@ export function runDeterministic(
           ? household.persons.find((p) => p.id !== person.id)
           : undefined;
       const spouseTotalIncome = spouse ? totalIncomeById.get(spouse.id) : undefined;
+      const spouseAge = spouse ? ageInYear(spouse.birthYearMonth, year) : undefined;
       const idecoAnnual = (person.deductions.idecoMonthly ?? 0) * 12;
 
       const taxInputBase = {
         totalIncome,
         socialInsurancePaid: g.socialInsurance,
         idecoAnnual,
+        spouseAge,
         dependents: person.id === dependentClaimantId ? householdDependents : []
       };
       const incomeTax = computeIncomeTax(

@@ -14,7 +14,7 @@
 
 import type { ResidentTaxRules, Yen } from "../types/index.js";
 import { applyRate, floorTo, stepAmount } from "./rounding.js";
-import { spouseDeduction } from "./spouse.js";
+import { spouseDeduction, type SpouseDeductionResult } from "./spouse.js";
 import {
   classifyDependents,
   dependentDeductionTotal,
@@ -27,6 +27,8 @@ export interface ResidentTaxInput {
   socialInsurancePaid: Yen;
   idecoAnnual?: Yen;
   spouseTotalIncome?: Yen;
+  /** 配偶者のその年12/31時点の年齢(老人配偶者の判定) */
+  spouseAge?: number | undefined;
   /** この納税者の扶養に入れる親族 */
   dependents?: readonly DependentInput[];
   rules: ResidentTaxRules;
@@ -65,6 +67,18 @@ export function nonTaxableThresholds(
   };
 }
 
+/** 調整控除に乗る配偶者分の人的控除額の差 */
+function spouseGap(
+  spouse: SpouseDeductionResult,
+  ac: ResidentTaxRules["adjustmentCredit"],
+  ownerTotalIncome: Yen
+): Yen {
+  if (spouse.amount <= 0) return 0;
+  if (spouse.kind === "ordinary") return stepAmount(ac.spouseDeductionGap.steps, ownerTotalIncome);
+  if (spouse.kind === "elderly") return stepAmount(ac.spouseElderlyDeductionGap.steps, ownerTotalIncome);
+  return 0;
+}
+
 export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
   const { totalIncome, socialInsurancePaid, rules } = input;
 
@@ -74,7 +88,8 @@ export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
     totalIncome,
     input.spouseTotalIncome,
     rules.spouseDeduction,
-    rules.spouseSpecialDeduction
+    rules.spouseSpecialDeduction,
+    input.spouseAge
   );
   const dependentList = input.dependents ?? [];
   const dependents = dependentDeductionTotal(dependentList, rules.dependentDeduction);
@@ -106,8 +121,9 @@ export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
   if (totalIncome <= ac.incomeLimit && taxableIncome > 0) {
     const gap =
       ac.basicDeductionGap +
-      // 配偶者特別控除は人的控除額の差の対象外(全帯「適用無」)。配偶者控除のときだけ乗る
-      (spouse.kind === "ordinary" && spouse.amount > 0 ? stepAmount(ac.spouseDeductionGap.steps, totalIncome) : 0) +
+      // 配偶者特別控除は人的控除額の差の対象外(全帯「適用無」)。配偶者控除のときだけ乗り、
+      // 老人配偶者は差が大きい(10万/6万/3万)
+      spouseGap(spouse, ac, totalIncome) +
       counts.general * ac.generalDependentGap +
       counts.specific * ac.specificDependentGap +
       counts.elderly * ac.elderlyDependentGap +

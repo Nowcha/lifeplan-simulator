@@ -9,6 +9,8 @@
  * - 住民税の配偶者特別控除額: 江東区・所得控除の種類(令和8年度以降)。上限33万円。
  *   https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/5105.html (確認日 2026-07-26)
  * - 同一生計配偶者の所得要件62万円以下(令和8年分): 同あらまし ⑶扶養親族等の所得要件の改正
+ * - 老人控除対象配偶者(その年12/31現在70歳以上): 所得税48/32/16万円・住民税38/26/13万円。
+ *   https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/zeikoujo.html (確認日 2026-07-26)
  */
 
 import { describe, expect, test } from "vitest";
@@ -133,5 +135,38 @@ describe("控除額は配偶者の所得が増えるほど単調に減る", () =
       expect(amount, `配偶者所得 ${spouseIncome}`).toBeLessThanOrEqual(previous);
       previous = amount;
     }
+  });
+});
+
+describe("老人控除対象配偶者(70歳以上)", () => {
+  const elderly = (spouseIncome: number, ownerIncome = OWNER_LOW) =>
+    spouseDeduction(ownerIncome, spouseIncome, it.spouseDeduction, it.spouseSpecialDeduction, 70);
+
+  test("70歳から割増される(所得税48万円)", () => {
+    expect(spouseDeduction(OWNER_LOW, 0, it.spouseDeduction, it.spouseSpecialDeduction, 69)).toEqual({
+      amount: 380_000,
+      kind: "ordinary"
+    });
+    expect(elderly(0)).toEqual({ amount: 480_000, kind: "elderly" });
+  });
+
+  test("住民税は38万円", () => {
+    expect(spouseDeduction(OWNER_LOW, 0, rt.spouseDeduction, rt.spouseSpecialDeduction, 70).amount).toBe(380_000);
+  });
+
+  test("本人の合計所得で48/32/16万円と逓減する", () => {
+    expect(elderly(0, 9_000_000).amount).toBe(480_000);
+    expect(elderly(0, 9_000_001).amount).toBe(320_000);
+    expect(elderly(0, 9_500_001).amount).toBe(160_000);
+    expect(elderly(0, 10_000_001).amount).toBe(0);
+  });
+
+  test("年齢が不明なら一般の配偶者控除として扱う", () => {
+    expect(spouseDeduction(OWNER_LOW, 0, it.spouseDeduction, it.spouseSpecialDeduction).kind).toBe("ordinary");
+  });
+
+  test("所得要件を超えると年齢に関係なく配偶者特別控除になる(割増は無い)", () => {
+    expect(elderly(620_001).kind).toBe("special");
+    expect(elderly(620_001).amount).toBe(380_000);
   });
 });

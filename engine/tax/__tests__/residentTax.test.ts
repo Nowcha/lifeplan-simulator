@@ -143,6 +143,28 @@ describe("扶養控除と調整控除", () => {
   });
 });
 
+describe("老人配偶者の調整控除", () => {
+  // 江東区・税額控除の種類: 老人配偶者の人的控除額の差は 10万(900万以下)/6万/3万
+  const low = { totalIncome: 2500000, socialInsurancePaid: 350000, spouseTotalIncome: 0, rules };
+
+  test("一般の配偶者より差が大きい(5万 → 10万)", () => {
+    const ordinary = computeResidentTax({ ...low, spouseAge: 69 });
+    const elderly = computeResidentTax({ ...low, spouseAge: 70 });
+
+    // 基礎5万 + 配偶者5万 = 10万 × 5%
+    expect(ordinary.adjustmentCredit).toBe(5000);
+    // 基礎5万 + 老人配偶者10万 = 15万 × 5%
+    expect(elderly.adjustmentCredit).toBe(7500);
+  });
+
+  test("控除額そのものも大きい(33万 → 38万)", () => {
+    const ordinary = computeResidentTax({ ...low, spouseAge: 69 });
+    const elderly = computeResidentTax({ ...low, spouseAge: 70 });
+
+    expect(ordinary.taxableIncome - elderly.taxableIncome).toBe(50000);
+  });
+});
+
 describe("配偶者特別控除は調整控除の対象外", () => {
   // 江東区・税額控除の種類の一覧で、配偶者特別控除の「差」は全帯「適用無」。
   // 注記: 「改正により扶養の範囲が引き上げられたことや、新たに控除の適用を受け、

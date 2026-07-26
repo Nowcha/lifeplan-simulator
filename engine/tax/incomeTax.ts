@@ -18,6 +18,8 @@ export interface IncomeTaxInput {
   idecoAnnual?: Yen;
   /** Spouse's 合計所得金額; undefined = no spouse */
   spouseTotalIncome?: Yen;
+  /** 配偶者のその年12/31時点の年齢(老人控除対象配偶者の判定) */
+  spouseAge?: number | undefined;
   /** この納税者の扶養に入れる親族(扶養控除) */
   dependents?: readonly DependentInput[];
   rules: IncomeTaxRules;
@@ -48,7 +50,8 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxResult {
     totalIncome,
     input.spouseTotalIncome,
     rules.spouseDeduction,
-    rules.spouseSpecialDeduction
+    rules.spouseSpecialDeduction,
+    input.spouseAge
   );
   const dependents = dependentDeductionTotal(input.dependents ?? [], rules.dependentDeduction);
   const totalDeductions = socialInsurancePaid + ideco + basic + spouse.amount + dependents;
