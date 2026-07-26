@@ -54,10 +54,28 @@ interface Household {
   schemaVersion: 1;
   persons: Person[];
   children: Child[];          // 既存 + イベントで追加される
+  dependents?: Dependent[];   // 子以外の被扶養親族(主に親)。省略可
   municipality: string;       // "koto-ku" — 自治体給付・保育料のrules参照キー
   baseExpenses: BaseExpenseItem[];
   financialAssets: AssetHolding[];
   savingsPolicy: SavingsPolicy;
+}
+
+/**
+ * 子以外の生計を一にする親族。主な用途は老人扶養親族(70歳以上)・同居老親等の
+ * 扶養控除。children と分けているのは、子が教育費・児童手当・出産イベントと
+ * 密結合なのに対し、こちらは扶養控除と住民税の非課税限度額にしか効かないため。
+ */
+interface Dependent {
+  id: string;
+  birthYearMonth: YearMonth;
+  /**
+   * 同居老親等の割増の判定。納税者またはその配偶者の直系尊属(父母・祖父母)で
+   * かつ同居している場合のみ true。別居の親や直系尊属でない親族は false。
+   */
+  coResidentDirectAscendant: boolean;
+  /** 合計所得金額(年額)。所得要件を超えると扶養親族に当たらない。省略時は0 */
+  annualIncome?: Yen;
 }
 
 interface Person {
@@ -442,14 +460,14 @@ interface MonteCarloSummary {
 
 ### 4-1. 扶養控除の扱い(Phase 2 追加)
 
-扶養親族は `household.children` および将来の `ChildbirthEvent` で生まれる子のみを対象とする(世帯モデルに高齢の被扶養者が存在しないため)。子の年齢は既存の `ageInYear()`(その年の12/31時点の年齢)で判定する。
+扶養親族は `household.children`(および将来の `ChildbirthEvent` で生まれる子)と `household.dependents`(子以外の被扶養親族。§3)を対象とする。年齢は既存の `ageInYear()`(その年の12/31時点の年齢)で判定する。
 
-- **控除額**: 16歳未満=なし、16〜18歳および23〜69歳=一般、19〜22歳=特定。所得税・住民税それぞれの `dependentDeduction` を参照する
+- **控除額**: 16歳未満=なし、16〜18歳および23〜69歳=一般、19〜22歳=特定、70歳以上=老人(同居老親等はさらに割増)。所得税・住民税それぞれの `dependentDeduction` を参照する
+- **所得要件**: 合計所得金額が `dependentDeduction.incomeMax`(令和8年分62万円)以下の者だけが扶養親族に当たる。超える者は控除も非課税限度額の人数算入も受けない。子は所得を持たないため常に成立する
 - **帰属**: 子は全員、その年の合計所得金額が最も高い人物の扶養に入れる(同額なら `household.persons` の先頭)。累進課税のため世帯の税額が最小になり、実務上も一般的な選択にあたる。扶養親族を複数人で分けて申告するケースはモデル化しない
 - **住民税の非課税限度額**: `35万円 ×(本人 + 同一生計配偶者 + 扶養親族)+ 10万円`、扶養親族がいる場合はさらに均等割で21万円、所得割で32万円を加算(東京23区=1級地)。判定に算入する扶養親族には**16歳未満も含む**(控除対象外でも人数には数える)
 
 **スコープ外(意図的な単純化)**:
-- **老人扶養親族・同居老親等**: 世帯モデルに70歳以上の被扶養者を置けないため未実装
 - **特定親族特別控除**(令和7年度創設、19〜22歳で合計所得62万円超123万円以下): 子に所得を持たせるモデルがないため、子は常に控除対象扶養親族に該当し、この控除は発生しない
 - **扶養親族の所得要件**(令和8年分: 62万円以下): 上記のとおり子の所得が常に0のため判定は常に成立する。配偶者側は既存の `spouseDeduction.spouseIncomeMax` で判定済み
 
