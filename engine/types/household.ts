@@ -51,6 +51,11 @@ export interface Child {
   birthYearMonth: YearMonth;
   /** Reference to an "education" event */
   educationPlanRef: EventId;
+  /**
+   * 合計所得金額(年額)。アルバイト等で扶養の所得要件を超えると扶養控除が外れ、
+   * 19〜22歳なら特定親族特別控除に切り替わる。省略時は0。
+   */
+  annualIncome?: Yen;
 }
 
 /**

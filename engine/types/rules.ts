@@ -70,6 +70,23 @@ export interface SpouseSpecialDeductionRules {
   _source?: RuleSource;
 }
 
+/**
+ * 特定親族特別控除(令和7年度創設)。19〜22歳の親族の合計所得が扶養親族の要件を
+ * 超えて123万円以下のとき、特定扶養控除の代わりに段階的な控除を与える。
+ * 扶養控除とは排他(設計書§8 4-1)。
+ */
+export interface SpecificRelativeSpecialDeductionRules {
+  fromAge: number;
+  toAge: number;
+  /** これを超える所得から適用(= 扶養親族の所得要件と同じ値) */
+  incomeMin: Yen;
+  /** これを超えると適用なし */
+  incomeMax: Yen;
+  /** 親族本人の合計所得金額に応じた控除額 */
+  steps: { incomeUpTo: Yen | null; amount: Yen }[];
+  _source?: RuleSource;
+}
+
 export interface IncomeTaxRules {
   brackets: TaxBracket[];
   /** Salary income computed directly (income after 給与所得控除) */
@@ -79,6 +96,7 @@ export interface IncomeTaxRules {
   spouseDeduction: SpouseDeductionRules;
   spouseSpecialDeduction: SpouseSpecialDeductionRules;
   dependentDeduction: DependentDeductionRules;
+  specificRelativeSpecialDeduction: SpecificRelativeSpecialDeductionRules;
   /** 復興特別所得税 (0.021). From 2027 this bucket represents 復興1.1% + 防衛1% (total unchanged). */
   reconstructionSurtax: Rate;
   _source: RuleSource;
@@ -120,6 +138,7 @@ export interface ResidentTaxRules {
     incomeLimit: Yen;
   };
   dependentDeduction: DependentDeductionRules;
+  specificRelativeSpecialDeduction: SpecificRelativeSpecialDeductionRules;
   /**
    * 非課税限度額 (Tokyo 23 wards = 生活保護法1級地). Threshold is
    * `perPerson * headcount + base`, plus `addPerCapita` / `addIncomeLevy`

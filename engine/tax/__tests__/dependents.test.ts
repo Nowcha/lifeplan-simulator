@@ -1,6 +1,13 @@
 import { describe, expect, test } from "vitest";
 import type { DependentDeductionRules } from "../../types/index.js";
-import { classifyDependents, dependentDeductionTotal, headcountDependents } from "../dependents.js";
+import {
+  classifyDependents,
+  dependentDeductionTotal,
+  headcountDependents,
+  specificRelativeSpecialDeductionTotal
+} from "../dependents.js";
+import rules2026 from "../../../rules/2026.json";
+import type { RuleSet } from "../../types/index.js";
 
 /**
  * 所得税の扶養控除(国税庁 タックスアンサー No.1180)
@@ -136,5 +143,76 @@ describe("扶養親族の所得要件", () => {
 
   test("16歳未満は控除対象外でも人数には算入する", () => {
     expect(headcountDependents([{ age: 3 }, { age: 10 }], incomeTaxRules)).toBe(2);
+  });
+});
+
+describe("特定親族特別控除", () => {
+  /**
+   * 一次情報: 国税庁「令和8年4月 源泉所得税の改正のあらまし」(参考)改正後の
+   * 特定親族特別控除額の表 https://www.nta.go.jp/publication/pamph/gensen/2026kaisei.pdf
+   * 住民税は江東区・所得控除の種類(令和8年度以降)。いずれも確認日 2026-07-26
+   */
+  const it = (rules2026 as unknown as RuleSet).incomeTax.specificRelativeSpecialDeduction;
+  const rt = (rules2026 as unknown as RuleSet).residentTax.specificRelativeSpecialDeduction;
+  const total = specificRelativeSpecialDeductionTotal;
+
+  test("所得要件以下(=特定扶養控除が使える)なら適用しない", () => {
+    expect(total([{ age: 20, annualIncome: 620000 }], it)).toBe(0);
+    expect(total([{ age: 20 }], it)).toBe(0);
+  });
+
+  test("62万円を超えると適用され、扶養控除の崖を埋める", () => {
+    // 特定扶養控除63万円が外れる代わりに、同額の63万円から始まる
+    expect(total([{ age: 20, annualIncome: 620001 }], it)).toBe(630000);
+  });
+
+  test("所得税の各帯(一次情報の表と一致)", () => {
+    const expected: [number, number][] = [
+      [850000, 630000],
+      [900000, 610000],
+      [950000, 510000],
+      [1000000, 410000],
+      [1050000, 310000],
+      [1100000, 210000],
+      [1150000, 110000],
+      [1200000, 60000],
+      [1230000, 30000]
+    ];
+
+    for (const [income, amount] of expected) {
+      expect(total([{ age: 20, annualIncome: income }], it), `所得 ${income}`).toBe(amount);
+    }
+  });
+
+  test("住民税は上限45万円で、95万円超は所得税と同額", () => {
+    expect(total([{ age: 20, annualIncome: 850000 }], rt)).toBe(450000);
+    expect(total([{ age: 20, annualIncome: 950000 }], rt)).toBe(450000);
+    expect(total([{ age: 20, annualIncome: 1000000 }], rt)).toBe(410000);
+  });
+
+  test("123万円を超えると適用なし", () => {
+    expect(total([{ age: 20, annualIncome: 1230001 }], it)).toBe(0);
+  });
+
+  test("19歳未満・23歳以上は対象外", () => {
+    expect(total([{ age: 18, annualIncome: 800000 }], it)).toBe(0);
+    expect(total([{ age: 23, annualIncome: 800000 }], it)).toBe(0);
+  });
+
+  test("扶養控除とは排他(二重に足されない)", () => {
+    // 所得要件を超えているので扶養控除側は0、特定親族特別控除だけが立つ
+    const child = [{ age: 20, annualIncome: 800000 }];
+
+    expect(dependentDeductionTotal(child, incomeTaxRules)).toBe(0);
+    expect(total(child, it)).toBe(630000);
+  });
+
+  test("複数人いれば合算する", () => {
+    const children = [
+      { age: 20, annualIncome: 800000 },
+      { age: 21, annualIncome: 1100000 }
+    ];
+
+    expect(total(children, it)).toBe(630000 + 210000);
   });
 });

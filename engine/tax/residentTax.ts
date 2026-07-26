@@ -19,6 +19,7 @@ import {
   classifyDependents,
   dependentDeductionTotal,
   headcountDependents,
+  specificRelativeSpecialDeductionTotal,
   type DependentInput
 } from "./dependents.js";
 
@@ -92,7 +93,9 @@ export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
     input.spouseAge
   );
   const dependentList = input.dependents ?? [];
-  const dependents = dependentDeductionTotal(dependentList, rules.dependentDeduction);
+  const dependents =
+    dependentDeductionTotal(dependentList, rules.dependentDeduction) +
+    specificRelativeSpecialDeductionTotal(dependentList, rules.specificRelativeSpecialDeduction);
 
   // 非課税判定: 均等割のしきい値の方が低いので、間に「均等割のみ課税」の帯がある
   const hasSameLivelihoodSpouse =

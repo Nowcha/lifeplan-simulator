@@ -7,7 +7,12 @@
  * (design doc §8 4-1)。
  */
 
-import type { DependentDeductionRules, Yen } from "../types/index.js";
+import type {
+  DependentDeductionRules,
+  SpecificRelativeSpecialDeductionRules,
+  Yen
+} from "../types/index.js";
+import { stepAmount } from "./rounding.js";
 
 /** 控除の区分。年少(16歳未満)と所得要件超過はどの区分にも入らない。 */
 export type DependentCategory = "general" | "specific" | "elderly" | "coResidentElderly";
@@ -18,8 +23,8 @@ export interface DependentInput {
   age: number;
   /** 納税者またはその配偶者の直系尊属で同居しているか(同居老親等の割増) */
   coResidentDirectAscendant?: boolean;
-  /** 合計所得金額。省略時は0(子は所得を持たない) */
-  annualIncome?: Yen;
+  /** 合計所得金額。省略時は0 */
+  annualIncome?: Yen | undefined;
 }
 
 export type DependentCounts = Record<DependentCategory, number>;
@@ -85,4 +90,25 @@ export function headcountDependents(
   rules: DependentDeductionRules
 ): number {
   return dependents.filter((d) => (d.annualIncome ?? 0) <= rules.incomeMax).length;
+}
+
+/**
+ * 特定親族特別控除。19〜22歳の親族の合計所得が扶養親族の要件を超えて123万円以下の
+ * とき、外れた特定扶養控除の代わりに段階的な控除を与える。
+ *
+ * 扶養控除とは排他 — `categorize` は所得要件超で undefined を返すので、扶養控除と
+ * 二重に足されることはない。
+ */
+export function specificRelativeSpecialDeductionTotal(
+  dependents: readonly DependentInput[],
+  rules: SpecificRelativeSpecialDeductionRules
+): Yen {
+  let total = 0;
+  for (const dependent of dependents) {
+    const income = dependent.annualIncome ?? 0;
+    if (dependent.age < rules.fromAge || dependent.age > rules.toAge) continue;
+    if (income <= rules.incomeMin || income > rules.incomeMax) continue;
+    total += stepAmount(rules.steps, income);
+  }
+  return total;
 }

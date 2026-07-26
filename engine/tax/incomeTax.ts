@@ -6,7 +6,9 @@
 
 import type { IncomeTaxRules, Rate, Yen } from "../types/index.js";
 import { applyRate, floorTo, stepAmount } from "./rounding.js";
-import { dependentDeductionTotal, type DependentInput } from "./dependents.js";
+import { dependentDeductionTotal,
+  specificRelativeSpecialDeductionTotal,
+  type DependentInput } from "./dependents.js";
 import { spouseDeduction } from "./spouse.js";
 
 export interface IncomeTaxInput {
@@ -53,7 +55,11 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxResult {
     rules.spouseSpecialDeduction,
     input.spouseAge
   );
-  const dependents = dependentDeductionTotal(input.dependents ?? [], rules.dependentDeduction);
+  const dependentList = input.dependents ?? [];
+  // 扶養控除と特定親族特別控除は排他だが、世帯に複数の親族がいれば同時に立ちうる
+  const dependents =
+    dependentDeductionTotal(dependentList, rules.dependentDeduction) +
+    specificRelativeSpecialDeductionTotal(dependentList, rules.specificRelativeSpecialDeduction);
   const totalDeductions = socialInsurancePaid + ideco + basic + spouse.amount + dependents;
 
   // 課税所得: floor to 1,000 yen

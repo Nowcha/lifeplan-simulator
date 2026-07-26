@@ -165,7 +165,8 @@ function collectChildrenForEducation(household: Household, events: LifeEvent[]):
   const fromHousehold: ChildEducationInput[] = household.children.map((child) => ({
     childId: child.id,
     birthYearMonth: child.birthYearMonth,
-    plan: educationEvents.find((e) => e.id === child.educationPlanRef)
+    plan: educationEvents.find((e) => e.id === child.educationPlanRef),
+    annualIncome: child.annualIncome
   }));
 
   const fromEvents: ChildEducationInput[] = events
@@ -525,7 +526,7 @@ export function runDeterministic(
     // 出生前の子は age < 0 になるので除外する(その年はまだ扶養親族ではない)。
     // 子以外の被扶養親族(household.dependents)も同じ扶養に入れる。
     const householdDependents: DependentInput[] = [
-      ...children.map((c) => ({ age: ageInYear(c.birthYearMonth, year) })),
+      ...children.map((c) => ({ age: ageInYear(c.birthYearMonth, year), annualIncome: c.annualIncome })),
       ...(household.dependents ?? []).map((d) => ({
         age: ageInYear(d.birthYearMonth, year),
         coResidentDirectAscendant: d.coResidentDirectAscendant,

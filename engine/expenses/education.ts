@@ -26,6 +26,8 @@ export interface ChildEducationInput {
   birthYearMonth: YearMonth;
   /** Undefined when no matching "education" event exists for this child */
   plan: EducationPlan | undefined;
+  /** 合計所得金額(年額)。教育費には影響せず、扶養控除の判定にのみ使う */
+  annualIncome?: Yen | undefined;
 }
 
 import type { IndexationFactors } from "../indexation.js";
