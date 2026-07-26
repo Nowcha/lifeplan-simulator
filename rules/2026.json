@@ -94,6 +94,28 @@
         { "spouseIncomeUpTo": 1330000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 30000 }, { "ownerIncomeUpTo": 9500000, "amount": 20000 }, { "ownerIncomeUpTo": 10000000, "amount": 10000 }, { "ownerIncomeUpTo": null, "amount": 0 }] }
       ]
     },
+    "specificRelativeSpecialDeduction": {
+      "_source": {
+        "url": "https://www.nta.go.jp/publication/pamph/gensen/2026kaisei.pdf",
+        "confirmedOn": "2026-07-26",
+        "note": "国税庁「令和8年4月 源泉所得税の改正のあらまし」(参考)改正後の特定親族特別控除額の表。令和8・9年分。対象は19歳以上23歳未満で合計所得62万円超123万円以下(給与収入136万円超197万円以下)。62万円超は特定扶養控除(63万円)が使えないため、この控除が段階的に引き継ぐ"
+      },
+      "fromAge": 19,
+      "toAge": 22,
+      "incomeMin": 620000,
+      "incomeMax": 1230000,
+      "steps": [
+        { "incomeUpTo": 850000, "amount": 630000 },
+        { "incomeUpTo": 900000, "amount": 610000 },
+        { "incomeUpTo": 950000, "amount": 510000 },
+        { "incomeUpTo": 1000000, "amount": 410000 },
+        { "incomeUpTo": 1050000, "amount": 310000 },
+        { "incomeUpTo": 1100000, "amount": 210000 },
+        { "incomeUpTo": 1150000, "amount": 110000 },
+        { "incomeUpTo": 1200000, "amount": 60000 },
+        { "incomeUpTo": 1230000, "amount": 30000 }
+      ]
+    },
     "dependentDeduction": {
       "_source": {
         "url": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1180.htm",
@@ -199,6 +221,26 @@
         { "spouseIncomeUpTo": 1250000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 110000 }, { "ownerIncomeUpTo": 9500000, "amount": 80000 }, { "ownerIncomeUpTo": 10000000, "amount": 40000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
         { "spouseIncomeUpTo": 1300000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 60000 }, { "ownerIncomeUpTo": 9500000, "amount": 40000 }, { "ownerIncomeUpTo": 10000000, "amount": 20000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
         { "spouseIncomeUpTo": 1330000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 30000 }, { "ownerIncomeUpTo": 9500000, "amount": 20000 }, { "ownerIncomeUpTo": 10000000, "amount": 10000 }, { "ownerIncomeUpTo": null, "amount": 0 }] }
+      ]
+    },
+    "specificRelativeSpecialDeduction": {
+      "_source": {
+        "url": "https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/5105.html",
+        "confirmedOn": "2026-07-26",
+        "note": "江東区・所得控除の種類(令和8年度以降)の特定親族特別控除の表。上限45万円(特定扶養控除と同額)で、95万円超は所得税と同額。下限は所得年ベースで揃えるため62万円超とする(residentTax.spouseDeduction.spouseIncomeMax と同じ理由)"
+      },
+      "fromAge": 19,
+      "toAge": 22,
+      "incomeMin": 620000,
+      "incomeMax": 1230000,
+      "steps": [
+        { "incomeUpTo": 950000, "amount": 450000 },
+        { "incomeUpTo": 1000000, "amount": 410000 },
+        { "incomeUpTo": 1050000, "amount": 310000 },
+        { "incomeUpTo": 1100000, "amount": 210000 },
+        { "incomeUpTo": 1150000, "amount": 110000 },
+        { "incomeUpTo": 1200000, "amount": 60000 },
+        { "incomeUpTo": 1230000, "amount": 30000 }
       ]
     },
     "dependentDeduction": {
