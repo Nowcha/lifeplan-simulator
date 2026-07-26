@@ -1,8 +1,14 @@
 import { useFieldArray, useFormContext, type Control, type UseFormRegister } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
-import { AddButton, ItemCard, MonthInput, Section, SelectInput } from '../form/fields'
-import { requiredTextRules, yearMonthRules } from '../../lib/validation'
-import { MUNICIPALITY_HELP, municipalityOptions } from '../../lib/formOptions'
+import { AddButton, ItemCard, MonthInput, NumberInput, Section, SelectInput } from '../form/fields'
+import { optionalNumberRules, requiredTextRules, yearMonthRules } from '../../lib/validation'
+import {
+  CO_RESIDENT_ASCENDANT_HELP,
+  CO_RESIDENT_ASCENDANT_OPTIONS,
+  DEPENDENT_INCOME_HELP,
+  MUNICIPALITY_HELP,
+  municipalityOptions
+} from '../../lib/formOptions'
 import { describeReferences } from '../../lib/references'
 import { useUndo } from '../../lib/undoContext'
 import { PersonForm } from './PersonForm'
@@ -16,6 +22,7 @@ interface HouseholdBasicsFormProps {
 export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormProps) {
   const persons = useFieldArray({ control, name: 'household.persons' })
   const children = useFieldArray({ control, name: 'household.children' })
+  const dependents = useFieldArray({ control, name: 'household.dependents' })
   const { getValues } = useFormContext<ProfileFormValues>()
   const { pushUndo } = useUndo()
 
@@ -108,6 +115,63 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
               </div>
             </ItemCard>
           ))}
+        </div>
+      </Section>
+
+      <Section
+        title="その他の被扶養親族"
+        note="生計を一にしている親など、子ども以外の扶養親族。扶養控除と住民税の非課税限度額に反映される。"
+        actions={
+          <AddButton
+            label="追加"
+            onClick={() =>
+              dependents.append({
+                id: `dependent-${crypto.randomUUID()}`,
+                birthYearMonth: '1955-01',
+                coResidentDirectAscendant: false
+              })
+            }
+          />
+        }
+      >
+        <div className="flex flex-col gap-3">
+          {dependents.fields.map((field, index) => (
+            <ItemCard
+              key={field.id}
+              title={`被扶養親族${index + 1}`}
+              onRemove={() => {
+                // household.dependents は省略可なので getValues は undefined を返しうる
+                const removed = getValues(`household.dependents.${index}`)
+                dependents.remove(index)
+                if (removed === undefined) return
+                pushUndo(`「被扶養親族${index + 1}」を削除しました。`, () => dependents.insert(index, removed))
+              }}
+            >
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <MonthInput
+                  label="生年月"
+                  {...register(`household.dependents.${index}.birthYearMonth`, yearMonthRules)}
+                />
+                <SelectInput
+                  label="同居の有無"
+                  help={CO_RESIDENT_ASCENDANT_HELP}
+                  options={[...CO_RESIDENT_ASCENDANT_OPTIONS]}
+                  {...register(`household.dependents.${index}.coResidentDirectAscendant`, {
+                    setValueAs: (v: unknown) => v === true || v === 'true'
+                  })}
+                />
+                <NumberInput
+                  label="本人の合計所得(任意)"
+                  suffix="円"
+                  help={DEPENDENT_INCOME_HELP}
+                  {...register(`household.dependents.${index}.annualIncome`, optionalNumberRules({ min: 0 }))}
+                />
+              </div>
+            </ItemCard>
+          ))}
+          {dependents.fields.length === 0 && (
+            <p className="text-sm text-ink-muted">登録がありません。親などを扶養している場合に追加する。</p>
+          )}
         </div>
       </Section>
     </div>

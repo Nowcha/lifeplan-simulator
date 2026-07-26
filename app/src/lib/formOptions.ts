@@ -189,3 +189,14 @@ export function municipalityOptions(): { value: string; label: string }[] {
     { value: MUNICIPALITY_OTHER, label: 'その他(自治体独自給付なし)' }
   ]
 }
+
+export const CO_RESIDENT_ASCENDANT_OPTIONS = [
+  { value: 'false', label: '別居、または直系尊属でない' },
+  { value: 'true', label: '同居している父母・祖父母' }
+] as const
+
+export const CO_RESIDENT_ASCENDANT_HELP =
+  '「同居老親等」に当たるかどうかで扶養控除額が変わる。納税者本人またはその配偶者の直系尊属(父母・祖父母)で、かつ同居している場合のみ割増になる(所得税58万円・住民税45万円)。別居の親や、兄弟姉妹など直系尊属でない親族は割増なし(所得税48万円・住民税38万円)。いずれも70歳以上の場合。'
+
+export const DEPENDENT_INCOME_HELP =
+  '被扶養親族本人の年間の合計所得金額。これが62万円(令和8年分)を超えると扶養親族に当たらなくなり、扶養控除も住民税の非課税限度額の人数算入も受けられない。年金収入がある親を入れる場合は、公的年金等控除後の金額を入れる。'
