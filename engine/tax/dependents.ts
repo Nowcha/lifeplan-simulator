@@ -1,36 +1,88 @@
 /**
  * 扶養控除 (dependent deduction), shared by income tax and resident tax.
  *
- * Ages are "age reached during the calendar year" (= age on Dec 31), which is
- * exactly the statutory reference date (前年12月31日の現況). Only children are
- * modeled as dependents — 老人扶養親族/同居老親等 are out of scope because the
- * household schema has no elderly dependents (design doc §8 4-1).
- *
- * The 合計所得金額 requirement for a dependent (62万円以下 from 令和8年分) is not
- * checked here: children carry no income in the model, so it always holds.
+ * 年齢はその年の12/31時点(= `ageInYear`)で判定する。統計上の基準日そのもの。
+ * 対象は `household.children` と `household.dependents`(子以外の被扶養親族)。
+ * 金額は所得税と住民税で違うが、区分の判定は共通なのでここに集約する
+ * (design doc §8 4-1)。
  */
 
 import type { DependentDeductionRules, Yen } from "../types/index.js";
 
-/** How many dependents fall in each deduction bracket (年少扶養親族 are in neither) */
-export interface DependentCounts {
-  general: number;
-  specific: number;
+/** 控除の区分。年少(16歳未満)と所得要件超過はどの区分にも入らない。 */
+export type DependentCategory = "general" | "specific" | "elderly" | "coResidentElderly";
+
+/** 扶養親族1人分の判定に必要な情報 */
+export interface DependentInput {
+  /** その年の12/31時点の年齢 */
+  age: number;
+  /** 納税者またはその配偶者の直系尊属で同居しているか(同居老親等の割増) */
+  coResidentDirectAscendant?: boolean;
+  /** 合計所得金額。省略時は0(子は所得を持たない) */
+  annualIncome?: Yen;
 }
 
-export function classifyDependents(ages: readonly number[], rules: DependentDeductionRules): DependentCounts {
-  let general = 0;
-  let specific = 0;
-  for (const age of ages) {
-    if (age < rules.minAge) continue;
-    if (age >= rules.specificFromAge && age <= rules.specificToAge) specific += 1;
-    else general += 1;
+export type DependentCounts = Record<DependentCategory, number>;
+
+const EMPTY_COUNTS: Readonly<DependentCounts> = Object.freeze({
+  general: 0,
+  specific: 0,
+  elderly: 0,
+  coResidentElderly: 0
+});
+
+/**
+ * 1人分の区分。控除対象にならない場合は undefined。
+ * 年齢より先に所得要件を見る — 所得が要件を超える者はそもそも扶養親族に当たらない。
+ */
+export function categorize(
+  dependent: DependentInput,
+  rules: DependentDeductionRules
+): DependentCategory | undefined {
+  if ((dependent.annualIncome ?? 0) > rules.incomeMax) return undefined;
+  if (dependent.age < rules.minAge) return undefined;
+  if (dependent.age >= rules.elderlyFromAge) {
+    return dependent.coResidentDirectAscendant === true ? "coResidentElderly" : "elderly";
   }
-  return { general, specific };
+  if (dependent.age >= rules.specificFromAge && dependent.age <= rules.specificToAge) return "specific";
+  return "general";
+}
+
+/** 区分ごとの人数。調整控除の人的控除差の計算にも使う。 */
+export function classifyDependents(
+  dependents: readonly DependentInput[],
+  rules: DependentDeductionRules
+): DependentCounts {
+  const counts: DependentCounts = { ...EMPTY_COUNTS };
+  for (const dependent of dependents) {
+    const category = categorize(dependent, rules);
+    if (category !== undefined) counts[category] += 1;
+  }
+  return counts;
 }
 
 /** Total 扶養控除 for the dependents attributed to one taxpayer */
-export function dependentDeductionTotal(ages: readonly number[], rules: DependentDeductionRules): Yen {
-  const { general, specific } = classifyDependents(ages, rules);
-  return general * rules.general + specific * rules.specific;
+export function dependentDeductionTotal(
+  dependents: readonly DependentInput[],
+  rules: DependentDeductionRules
+): Yen {
+  const counts = classifyDependents(dependents, rules);
+  return (
+    counts.general * rules.general +
+    counts.specific * rules.specific +
+    counts.elderly * rules.elderly +
+    counts.coResidentElderly * rules.coResidentElderly
+  );
+}
+
+/**
+ * 住民税の非課税限度額の人数に算入される扶養親族の数。
+ * 控除対象外の16歳未満も含むが、所得要件を超える者は含まない
+ * (design doc §8 4-1)。
+ */
+export function headcountDependents(
+  dependents: readonly DependentInput[],
+  rules: DependentDeductionRules
+): number {
+  return dependents.filter((d) => (d.annualIncome ?? 0) <= rules.incomeMax).length;
 }

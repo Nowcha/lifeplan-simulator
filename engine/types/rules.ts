@@ -98,9 +98,14 @@ export interface ResidentTaxRules {
      * ステップは `spouseDeduction.steps` と同じ境界だが金額だけが異なる。
      */
     spouseDeductionGap: { steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[] };
-    /** 人的控除額の差 per dependent: 一般 5万 (38万-33万) / 特定 18万 (63万-45万) */
+    /**
+     * 人的控除額の差 per dependent: 一般 5万 (38万-33万) / 特定 18万 (63万-45万) /
+     * 老人 10万 (48万-38万) / 同居老親等 13万 (58万-45万)
+     */
     generalDependentGap: Yen;
     specificDependentGap: Yen;
+    elderlyDependentGap: Yen;
+    coResidentElderlyDependentGap: Yen;
     threshold: Yen;
     rateCity: Rate;
     ratePref: Rate;
@@ -126,8 +131,7 @@ export interface ResidentTaxRules {
 
 /**
  * 扶養控除. Amounts differ between income tax and resident tax; the age
- * brackets are shared. 老人扶養親族/同居老親等 are out of scope — the household
- * model has no elderly dependents (design doc §8 4-1).
+ * brackets and the income requirement are shared (design doc §8 4-1).
  */
 export interface DependentDeductionRules {
   /** Minimum age (as of Dec 31) to qualify at all — 年少扶養親族 get no deduction */
@@ -135,8 +139,16 @@ export interface DependentDeductionRules {
   /** 特定扶養親族 age range, both bounds inclusive */
   specificFromAge: number;
   specificToAge: number;
+  /** 老人扶養親族 age floor (70) */
+  elderlyFromAge: number;
+  /** 扶養親族に当たる 合計所得金額 の上限 */
+  incomeMax: Yen;
   general: Yen;
   specific: Yen;
+  /** 老人扶養親族 (同居老親等以外) */
+  elderly: Yen;
+  /** 同居老親等 */
+  coResidentElderly: Yen;
   _source?: RuleSource;
 }
 

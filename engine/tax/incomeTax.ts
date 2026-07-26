@@ -6,7 +6,7 @@
 
 import type { IncomeTaxRules, Rate, Yen } from "../types/index.js";
 import { applyRate, floorTo, stepAmount } from "./rounding.js";
-import { dependentDeductionTotal } from "./dependents.js";
+import { dependentDeductionTotal, type DependentInput } from "./dependents.js";
 import { spouseDeduction } from "./spouse.js";
 
 export interface IncomeTaxInput {
@@ -18,8 +18,8 @@ export interface IncomeTaxInput {
   idecoAnnual?: Yen;
   /** Spouse's 合計所得金額; undefined = no spouse */
   spouseTotalIncome?: Yen;
-  /** Ages (on Dec 31) of the dependents attributed to this taxpayer (扶養控除) */
-  dependentAges?: readonly number[];
+  /** この納税者の扶養に入れる親族(扶養控除) */
+  dependents?: readonly DependentInput[];
   rules: IncomeTaxRules;
 }
 
@@ -50,7 +50,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxResult {
     rules.spouseDeduction,
     rules.spouseSpecialDeduction
   );
-  const dependents = dependentDeductionTotal(input.dependentAges ?? [], rules.dependentDeduction);
+  const dependents = dependentDeductionTotal(input.dependents ?? [], rules.dependentDeduction);
   const totalDeductions = socialInsurancePaid + ideco + basic + spouse.amount + dependents;
 
   // 課税所得: floor to 1,000 yen

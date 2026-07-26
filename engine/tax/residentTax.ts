@@ -15,15 +15,20 @@
 import type { ResidentTaxRules, Yen } from "../types/index.js";
 import { applyRate, floorTo, stepAmount } from "./rounding.js";
 import { spouseDeduction } from "./spouse.js";
-import { classifyDependents, dependentDeductionTotal } from "./dependents.js";
+import {
+  classifyDependents,
+  dependentDeductionTotal,
+  headcountDependents,
+  type DependentInput
+} from "./dependents.js";
 
 export interface ResidentTaxInput {
   totalIncome: Yen;
   socialInsurancePaid: Yen;
   idecoAnnual?: Yen;
   spouseTotalIncome?: Yen;
-  /** Ages (on Dec 31) of the dependents attributed to this taxpayer */
-  dependentAges?: readonly number[];
+  /** この納税者の扶養に入れる親族 */
+  dependents?: readonly DependentInput[];
   rules: ResidentTaxRules;
 }
 
@@ -71,13 +76,14 @@ export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
     rules.spouseDeduction,
     rules.spouseSpecialDeduction
   );
-  const dependentAges = input.dependentAges ?? [];
-  const dependents = dependentDeductionTotal(dependentAges, rules.dependentDeduction);
+  const dependentList = input.dependents ?? [];
+  const dependents = dependentDeductionTotal(dependentList, rules.dependentDeduction);
 
   // 非課税判定: 均等割のしきい値の方が低いので、間に「均等割のみ課税」の帯がある
   const hasSameLivelihoodSpouse =
     input.spouseTotalIncome !== undefined && input.spouseTotalIncome <= rules.spouseDeduction.spouseIncomeMax;
-  const headcount = 1 + (hasSameLivelihoodSpouse ? 1 : 0) + dependentAges.length;
+  const headcount =
+    1 + (hasSameLivelihoodSpouse ? 1 : 0) + headcountDependents(dependentList, rules.dependentDeduction);
   const thresholds = nonTaxableThresholds(headcount, rules.nonTaxable);
 
   if (totalIncome <= thresholds.perCapita) return ZERO;
@@ -92,10 +98,10 @@ export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
     1000
   );
 
-  // 調整控除: 人的控除差(基礎5万 + 配偶者5万/4万/2万 + 扶養 一般5万/特定18万)に基づく。
+  // 調整控除: 人的控除差(基礎5万 + 配偶者5万/4万/2万 + 扶養 一般5万/特定18万/老人10万/同居老親13万)に基づく。
   // 配偶者控除の差は本人の合計所得金額で段階的に縮む(900万超で4万、950万超で2万)。
   const ac = rules.adjustmentCredit;
-  const counts = classifyDependents(dependentAges, rules.dependentDeduction);
+  const counts = classifyDependents(dependentList, rules.dependentDeduction);
   let adjustmentCredit = 0;
   if (totalIncome <= ac.incomeLimit && taxableIncome > 0) {
     const gap =
@@ -103,7 +109,9 @@ export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
       // 配偶者特別控除は人的控除額の差の対象外(全帯「適用無」)。配偶者控除のときだけ乗る
       (spouse.kind === "ordinary" && spouse.amount > 0 ? stepAmount(ac.spouseDeductionGap.steps, totalIncome) : 0) +
       counts.general * ac.generalDependentGap +
-      counts.specific * ac.specificDependentGap;
+      counts.specific * ac.specificDependentGap +
+      counts.elderly * ac.elderlyDependentGap +
+      counts.coResidentElderly * ac.coResidentElderlyDependentGap;
     const rateTotal = ac.rateCity + ac.ratePref;
     if (taxableIncome <= ac.threshold) {
       adjustmentCredit = Math.floor(applyRate(Math.min(gap, taxableIncome), rateTotal));

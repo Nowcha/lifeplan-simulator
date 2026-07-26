@@ -69,6 +69,7 @@ import {
 } from "./tax/socialInsurance.js";
 import { annualChildbirthBenefits, type BenefitLine, type LeaveWageBasis } from "./benefits/childbirth.js";
 import { annualChildBenefits } from "./benefits/childAllowance.js";
+import type { DependentInput } from "./tax/dependents.js";
 import { monthlyLeavePlan, type MonthWorkPlan } from "./benefits/leave.js";
 import { buildBaseRatePath } from "./housing/baseRate.js";
 import { annualHoldingCosts, annualPurchaseCashOutflow } from "./housing/holdingCosts.js";
@@ -521,10 +522,16 @@ export function runDeterministic(
       if (best === undefined) return p.id;
       return (totalIncomeById.get(p.id) ?? 0) > (totalIncomeById.get(best) ?? 0) ? p.id : best;
     }, undefined);
-    // 出生前の子は age < 0 になるので除外する(その年はまだ扶養親族ではない)
-    const dependentAges = children
-      .map((c) => ageInYear(c.birthYearMonth, year))
-      .filter((age) => age >= 0);
+    // 出生前の子は age < 0 になるので除外する(その年はまだ扶養親族ではない)。
+    // 子以外の被扶養親族(household.dependents)も同じ扶養に入れる。
+    const householdDependents: DependentInput[] = [
+      ...children.map((c) => ({ age: ageInYear(c.birthYearMonth, year) })),
+      ...(household.dependents ?? []).map((d) => ({
+        age: ageInYear(d.birthYearMonth, year),
+        coResidentDirectAscendant: d.coResidentDirectAscendant,
+        annualIncome: d.annualIncome
+      }))
+    ].filter((d) => d.age >= 0);
 
     // Step 4-5: income tax and resident tax per person
     const appliedHousingCreditByPerson = new Map<string, Yen>();
@@ -544,7 +551,7 @@ export function runDeterministic(
         totalIncome,
         socialInsurancePaid: g.socialInsurance,
         idecoAnnual,
-        dependentAges: person.id === dependentClaimantId ? dependentAges : []
+        dependents: person.id === dependentClaimantId ? householdDependents : []
       };
       const incomeTax = computeIncomeTax(
         spouseTotalIncome !== undefined

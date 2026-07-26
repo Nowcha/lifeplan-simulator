@@ -60,7 +60,7 @@ describe("非課税判定(単身)", () => {
 describe("非課税判定(扶養親族あり)", () => {
   // 本人 + 16歳未満の子2人 = 3人 → 35万×3+10万 = 115万
   // 均等割非課税 136万以下 / 所得割非課税 147万以下
-  const base = { socialInsurancePaid: 0, dependentAges: [5, 10], rules };
+  const base = { socialInsurancePaid: 0, dependents: [{ age: 5 }, { age: 10 }], rules };
 
   test("16歳未満の子も人数に算入される(控除は無くても数える)", () => {
     // 単身なら45万で課税されるが、子2人がいるので136万まで全額非課税
@@ -103,15 +103,15 @@ describe("扶養控除と調整控除", () => {
 
   test("扶養控除の分だけ課税所得が下がる(一般33万・特定45万)", () => {
     const none = computeResidentTax(base);
-    const general = computeResidentTax({ ...base, dependentAges: [17] });
-    const specific = computeResidentTax({ ...base, dependentAges: [20] });
+    const general = computeResidentTax({ ...base, dependents: [{ age: 17 }] });
+    const specific = computeResidentTax({ ...base, dependents: [{ age: 20 }] });
 
     expect(none.taxableIncome - general.taxableIncome).toBe(330000);
     expect(none.taxableIncome - specific.taxableIncome).toBe(450000);
   });
 
   test("16歳未満の子は控除に影響しない", () => {
-    expect(computeResidentTax({ ...base, dependentAges: [10] }).taxableIncome).toBe(
+    expect(computeResidentTax({ ...base, dependents: [{ age: 10 }] }).taxableIncome).toBe(
       computeResidentTax(base).taxableIncome
     );
   });
@@ -121,7 +121,7 @@ describe("扶養控除と調整控除", () => {
     // このケースは課税所得が高く最低額に張り付くため、差の増加は調整控除を動かさない。
     // 差そのものが効いていることは低所得ケースで確認する。
     const none = computeResidentTax(base);
-    const specific = computeResidentTax({ ...base, dependentAges: [20] });
+    const specific = computeResidentTax({ ...base, dependents: [{ age: 20 }] });
 
     expect(none.adjustmentCredit).toBe(2500);
     expect(specific.adjustmentCredit).toBe(2500);
@@ -131,8 +131,8 @@ describe("扶養控除と調整控除", () => {
     // 合計所得250万・社保35万 → 課税所得は200万以下に収まる
     const low = { totalIncome: 2500000, socialInsurancePaid: 350000, rules };
     const none = computeResidentTax(low);
-    const general = computeResidentTax({ ...low, dependentAges: [17] });
-    const specific = computeResidentTax({ ...low, dependentAges: [20] });
+    const general = computeResidentTax({ ...low, dependents: [{ age: 17 }] });
+    const specific = computeResidentTax({ ...low, dependents: [{ age: 20 }] });
 
     // 基礎5万のみ → 5万×5% = 2,500円
     expect(none.adjustmentCredit).toBe(2500);
