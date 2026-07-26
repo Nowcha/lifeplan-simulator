@@ -58,7 +58,7 @@
       "_source": {
         "url": "https://www.nta.go.jp/publication/pamph/gensen/2026kaisei.pdf",
         "confirmedOn": "2026-07-11",
-        "note": "令和8年度改正: 同一生計配偶者の所得要件は62万円以下(給与収入136万円以下)。控除額38/26/13万円(本人合計所得900/950/1,000万円区分)は従来通り。配偶者特別控除(配偶者所得62万超133万以下)はフェーズ2でテーブル追加予定"
+        "note": "令和8年度改正: 同一生計配偶者の所得要件は62万円以下(給与収入136万円以下)。控除額38/26/13万円(本人合計所得900/950/1,000万円区分)は従来通り。配偶者所得が62万円を超える帯は spouseSpecialDeduction(配偶者特別控除)が引き継ぐ。老人配偶者(70歳以上)の割増48万円は世帯モデルに配偶者の年齢区分が無いためスコープ外(設計書§8 4-2)"
       },
       "spouseIncomeMax": 620000,
       "steps": [
@@ -66,6 +66,25 @@
         { "ownerIncomeUpTo": 9500000, "amount": 260000 },
         { "ownerIncomeUpTo": 10000000, "amount": 130000 },
         { "ownerIncomeUpTo": null, "amount": 0 }
+      ]
+    },
+    "spouseSpecialDeduction": {
+      "_source": {
+        "url": "https://www.nta.go.jp/publication/pamph/gensen/2026kaisei.pdf",
+        "confirmedOn": "2026-07-26",
+        "note": "国税庁「令和8年4月 源泉所得税の改正のあらまし」(参考)改正後の配偶者特別控除額の表。令和8・9年分。対象は配偶者の合計所得62万円超133万円以下(給与収入136万円超207万円以下)。本人の合計所得900万円以下/900万円超950万円以下/950万円超1,000万円以下で3段階、1,000万円超は適用なし。62万円超95万円以下は38/26/13万円(表では特定親族特別控除の刻みに合わせて85万・90万で行が分かれるが、配偶者特別控除額は95万円まで同額)"
+      },
+      "spouseIncomeMax": 1330000,
+      "brackets": [
+        { "spouseIncomeUpTo": 950000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 380000 }, { "ownerIncomeUpTo": 9500000, "amount": 260000 }, { "ownerIncomeUpTo": 10000000, "amount": 130000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1000000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 360000 }, { "ownerIncomeUpTo": 9500000, "amount": 240000 }, { "ownerIncomeUpTo": 10000000, "amount": 120000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1050000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 310000 }, { "ownerIncomeUpTo": 9500000, "amount": 210000 }, { "ownerIncomeUpTo": 10000000, "amount": 110000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1100000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 260000 }, { "ownerIncomeUpTo": 9500000, "amount": 180000 }, { "ownerIncomeUpTo": 10000000, "amount": 90000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1150000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 210000 }, { "ownerIncomeUpTo": 9500000, "amount": 140000 }, { "ownerIncomeUpTo": 10000000, "amount": 70000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1200000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 160000 }, { "ownerIncomeUpTo": 9500000, "amount": 110000 }, { "ownerIncomeUpTo": 10000000, "amount": 60000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1250000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 110000 }, { "ownerIncomeUpTo": 9500000, "amount": 80000 }, { "ownerIncomeUpTo": 10000000, "amount": 40000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1300000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 60000 }, { "ownerIncomeUpTo": 9500000, "amount": 40000 }, { "ownerIncomeUpTo": 10000000, "amount": 20000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1330000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 30000 }, { "ownerIncomeUpTo": 9500000, "amount": 20000 }, { "ownerIncomeUpTo": 10000000, "amount": 10000 }, { "ownerIncomeUpTo": null, "amount": 0 }] }
       ]
     },
     "dependentDeduction": {
@@ -130,6 +149,24 @@
       "ratePref": 0.02,
       "minimum": 2500,
       "incomeLimit": 25000000
+    },
+    "spouseSpecialDeduction": {
+      "_source": {
+        "url": "https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/5105.html",
+        "confirmedOn": "2026-07-26",
+        "note": "江東区・所得控除の種類(令和8年度以降)の配偶者特別控除の表。控除額は上限33万円で、100万円超の帯は所得税と同額。下限は所得年ベースで揃えるため62万円超とする(住民税は前年所得に課税されるため、令和8年分所得に適用される令和9年度住民税では扶養親族等の所得要件62万円が効く。既存の residentTax.spouseDeduction.spouseIncomeMax も同じ理由で620000)。調整控除の人的控除額の差は全帯「適用無」: https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/zeikoujo.html"
+      },
+      "spouseIncomeMax": 1330000,
+      "brackets": [
+        { "spouseIncomeUpTo": 1000000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 330000 }, { "ownerIncomeUpTo": 9500000, "amount": 220000 }, { "ownerIncomeUpTo": 10000000, "amount": 110000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1050000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 310000 }, { "ownerIncomeUpTo": 9500000, "amount": 210000 }, { "ownerIncomeUpTo": 10000000, "amount": 110000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1100000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 260000 }, { "ownerIncomeUpTo": 9500000, "amount": 180000 }, { "ownerIncomeUpTo": 10000000, "amount": 90000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1150000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 210000 }, { "ownerIncomeUpTo": 9500000, "amount": 140000 }, { "ownerIncomeUpTo": 10000000, "amount": 70000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1200000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 160000 }, { "ownerIncomeUpTo": 9500000, "amount": 110000 }, { "ownerIncomeUpTo": 10000000, "amount": 60000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1250000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 110000 }, { "ownerIncomeUpTo": 9500000, "amount": 80000 }, { "ownerIncomeUpTo": 10000000, "amount": 40000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1300000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 60000 }, { "ownerIncomeUpTo": 9500000, "amount": 40000 }, { "ownerIncomeUpTo": 10000000, "amount": 20000 }, { "ownerIncomeUpTo": null, "amount": 0 }] },
+        { "spouseIncomeUpTo": 1330000, "steps": [{ "ownerIncomeUpTo": 9000000, "amount": 30000 }, { "ownerIncomeUpTo": 9500000, "amount": 20000 }, { "ownerIncomeUpTo": 10000000, "amount": 10000 }, { "ownerIncomeUpTo": null, "amount": 0 }] }
+      ]
     },
     "dependentDeduction": {
       "_source": {
