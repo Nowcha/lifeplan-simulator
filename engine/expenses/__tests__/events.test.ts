@@ -3,10 +3,11 @@
  */
 
 import { describe, expect, test } from "vitest";
+import { constantFactor } from "../../indexation.js";
 import type { OneTimeEvent, RecurringModifierEvent } from "../../types/index.js";
 import { annualOneTimeEvents, annualRecurringEvents } from "../events.js";
 
-const rates = { inflation: 0.02, wage: 0.03 };
+const rates = { inflation: constantFactor(0.02), wage: constantFactor(0.03) };
 
 describe("annualRecurringEvents", () => {
   test("intervalYears ごとに amount を計上する(車の買い替え7年ごと)", () => {

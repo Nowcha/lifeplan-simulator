@@ -114,3 +114,78 @@ describe("generateFactorPaths", () => {
     expect(mean).toBeLessThan(0.06);
   });
 });
+
+describe("インフレ率・賃金上昇率の確率変動", () => {
+  test("全年分の実現値を返す", () => {
+    const paths = generateFactorPaths(baseAssumptions(), 2026, 2030, createRng(1));
+
+    expect(paths.inflation).toHaveLength(5);
+    expect(paths.wageGrowth).toHaveLength(5);
+  });
+
+  test("volatilityが0なら毎年meanと一致する(決定論パスと同じ挙動)", () => {
+    const assumptions = baseAssumptions({
+      inflation: { mean: 0.015, volatility: 0 },
+      wageGrowth: { mean: 0.02, volatility: 0 }
+    });
+
+    const paths = generateFactorPaths(assumptions, 2026, 2030, createRng(1));
+
+    expect(paths.inflation.every((r) => r === 0.015)).toBe(true);
+    expect(paths.wageGrowth.every((r) => r === 0.02)).toBe(true);
+  });
+
+  test("volatilityが正なら年ごとに変動する", () => {
+    const paths = generateFactorPaths(baseAssumptions(), 2026, 2060, createRng(7));
+
+    expect(new Set(paths.inflation).size).toBeGreaterThan(1);
+    expect(new Set(paths.wageGrowth).size).toBeGreaterThan(1);
+  });
+
+  test("実現値の平均はmeanの近傍に収まる", () => {
+    const paths = generateFactorPaths(baseAssumptions(), 2026, 2525, createRng(3)); // 500年分
+    const mean = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length;
+
+    // volatility 0.01 / sqrt(500) ≈ 0.00045 なので 0.002 の幅は十分緩い
+    expect(mean(paths.inflation)).toBeCloseTo(0.015, 2);
+    expect(mean(paths.wageGrowth)).toBeCloseTo(0.02, 2);
+  });
+
+  test("デフレ(マイナスのインフレ率)も引きうる", () => {
+    // 正規分布なので下限を課していない。対数正規の資産リターンと違い、
+    // インフレ率は素の率なのでマイナスに振れて良い。
+    const assumptions = baseAssumptions({ inflation: { mean: 0.005, volatility: 0.02 } });
+    const paths = generateFactorPaths(assumptions, 2026, 2225, createRng(11));
+
+    expect(paths.inflation.some((r) => r < 0)).toBe(true);
+  });
+
+  test("相関行列に載せると資産クラスと連動する", () => {
+    // インフレと株式を強い正の相関にすると、実現値の符号がそろいやすくなる
+    const assumptions = baseAssumptions({
+      correlationMatrix: {
+        factors: ["global-equity", "inflation"],
+        matrix: [
+          [1, 0.9],
+          [0.9, 1]
+        ]
+      }
+    });
+    const paths = generateFactorPaths(assumptions, 2026, 2225, createRng(5));
+
+    const equity = paths.assetReturns["global-equity"] ?? [];
+    const sameSide = paths.inflation.filter(
+      (inf, i) => inf > 0.015 === (equity[i] ?? 0) > 0.05
+    ).length;
+
+    expect(sameSide / paths.inflation.length).toBeGreaterThan(0.7);
+  });
+
+  test("同じseedなら再現する", () => {
+    const a = generateFactorPaths(baseAssumptions(), 2026, 2040, createRng(9));
+    const b = generateFactorPaths(baseAssumptions(), 2026, 2040, createRng(9));
+
+    expect(a.inflation).toEqual(b.inflation);
+    expect(a.wageGrowth).toEqual(b.wageGrowth);
+  });
+});

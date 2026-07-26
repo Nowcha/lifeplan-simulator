@@ -4,6 +4,7 @@
  */
 
 import { describe, expect, test } from "vitest";
+import { constantIndexation } from "../../indexation.js";
 import rules2026 from "../../../rules/2026.json";
 import educationCostsData from "../../../rules/education-costs.json";
 import type {
@@ -18,7 +19,7 @@ const rules = rules2026 as RuleSet;
 const realEducationCosts = educationCostsData as EducationCosts;
 const realChildcareCost = rules.childBenefits?.childcareCost as ChildcareCostRules;
 
-const rates = { inflation: 0.02, wage: 0.03, education: 0.02 };
+const rates = constantIndexation({ inflation: 0.02, wage: 0.03, education: 0.02 });
 
 // Small fixture with round numbers, isolated from real rules churn, used for
 // stage-selection and boundary-logic assertions.

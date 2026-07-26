@@ -4,7 +4,8 @@
  * Indexation (wage growth) is applied by the caller via indexFactor.
  */
 
-import type { Indexation, IncomePoint, Rate, Yen } from "../types/index.js";
+import type { Indexation, IncomePoint, Yen } from "../types/index.js";
+import type { IndexationFactors } from "../indexation.js";
 
 function interpolate(points: IncomePoint[], age: number, pick: (p: IncomePoint) => Yen): Yen {
   if (points.length === 0) return 0;
@@ -46,13 +47,16 @@ export function indexationAt(points: IncomePoint[], age: number): Indexation {
   return current.indexation;
 }
 
-/** Deterministic compounding factor for an indexation mode after `yearsElapsed` years */
+/**
+ * Compounding factor for an indexation mode after `yearsElapsed` years.
+ * 累積の作り方(一定率の複利か、年次実現値の累積積か)は `factors` 側が持つ
+ * ので、ここは指標の選択だけを担う(engine/indexation.ts)。
+ */
 export function indexFactor(
   indexation: Indexation,
   yearsElapsed: number,
-  rates: { inflation: Rate; wage: Rate }
+  factors: Pick<IndexationFactors, "inflation" | "wage">
 ): number {
   if (indexation === "fixed" || yearsElapsed <= 0) return 1;
-  const rate = indexation === "wage" ? rates.wage : rates.inflation;
-  return Math.pow(1 + rate, yearsElapsed);
+  return indexation === "wage" ? factors.wage(yearsElapsed) : factors.inflation(yearsElapsed);
 }

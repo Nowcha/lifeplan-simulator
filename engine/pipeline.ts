@@ -53,6 +53,7 @@ import type {
   YearMonth
 } from "./types/index.js";
 import { bonusAnnualAt, indexFactor, indexationAt, monthlyBaseAt } from "./income/curve.js";
+import { constantIndexation, pathFactor, type IndexationFactors } from "./indexation.js";
 import { annualBaseExpenses, type ExpenseLine } from "./expenses/base.js";
 import { annualOneTimeEvents, annualRecurringEvents } from "./expenses/events.js";
 import { annualEducationExpenses, type ChildEducationInput } from "./expenses/education.js";
@@ -93,6 +94,10 @@ export interface PipelineOptions {
     baseRate?: Map<number, Rate>;
     /** assetClassId → rate[], index = year - startYear */
     assetReturns?: { [assetClassId: string]: Rate[] };
+    /** インフレ率の年次実現値, index = year - startYear */
+    inflation?: Rate[];
+    /** 賃金上昇率の年次実現値, index = year - startYear */
+    wage?: Rate[];
   };
 }
 
@@ -108,24 +113,42 @@ interface PersonYearEconomics {
   residentIncomeLevy: Yen;
 }
 
-interface DeterministicRates {
-  inflation: Rate;
-  wage: Rate;
-  /**
-   * Education-cost inflation (design doc: distinct from general CPI).
-   * Phase 2 supplies a deterministic fixed value via the same
-   * deterministicOverride mechanism as inflation/wage-growth, falling back
-   * to the general inflation rate when no override is supplied.
-   */
-  education: Rate;
-}
+/**
+ * インフレ・賃金・教育費の累積倍率。決定論パスは一定率の複利、モンテカルロ試行は
+ * 年次実現値の累積積を使う(engine/indexation.ts)。
+ *
+ * `deterministicOverride` は決定論の期待値を差し替えるためのものなので、実現値の
+ * パスが渡されている指標ではそちらを優先する。教育費のインフレは実現値パスを
+ * 持たないため、一般物価の実現値に追随させる(設計書§5: 教育費は一般物価と別の
+ * 率を置けるが、確率変動の因子としては独立に扱っていない)。
+ */
+function indexationFactors(
+  assumptions: Assumptions,
+  stochastic?: PipelineOptions["stochasticPaths"]
+): IndexationFactors {
+  const inflationMean = assumptions.deterministicOverride?.["inflation"] ?? assumptions.inflation.mean;
+  const wageMean = assumptions.deterministicOverride?.["wage-growth"] ?? assumptions.wageGrowth.mean;
+  const educationMean = assumptions.deterministicOverride?.["education"] ?? inflationMean;
 
-function deterministicRates(assumptions: Assumptions): DeterministicRates {
-  const inflation = assumptions.deterministicOverride?.["inflation"] ?? assumptions.inflation.mean;
+  const constant = constantIndexation({
+    inflation: inflationMean,
+    wage: wageMean,
+    education: educationMean
+  });
+
+  const inflationPath = stochastic?.inflation;
+  const wagePath = stochastic?.wage;
+  if (inflationPath === undefined && wagePath === undefined) return constant;
+
+  // 教育費は一般物価の実現値に、決定論での差分(教育率 − 物価率)を上乗せして追随させる
+  const educationSpread = educationMean - inflationMean;
   return {
-    inflation,
-    wage: assumptions.deterministicOverride?.["wage-growth"] ?? assumptions.wageGrowth.mean,
-    education: assumptions.deterministicOverride?.["education"] ?? inflation
+    inflation: inflationPath === undefined ? constant.inflation : pathFactor(inflationPath),
+    wage: wagePath === undefined ? constant.wage : pathFactor(wagePath),
+    education:
+      inflationPath === undefined
+        ? constant.education
+        : pathFactor(inflationPath.map((rate) => rate + educationSpread))
   };
 }
 
@@ -167,7 +190,7 @@ function computeExpenseLines(
   household: Household,
   year: number,
   startYear: number,
-  rates: DeterministicRates,
+  rates: IndexationFactors,
   recurringEvents: RecurringModifierEvent[],
   oneTimeEvents: OneTimeEvent[],
   children: ChildEducationInput[],
@@ -233,7 +256,7 @@ function computePersonYear(
   person: Person,
   age: number,
   yearsElapsed: number,
-  rates: { inflation: Rate; wage: Rate },
+  rates: Pick<IndexationFactors, "inflation" | "wage">,
   rules: RuleSet,
   months: MonthWorkPlan[]
 ): { gross: Yen; monthlyPay: Yen; bonusAnnual: Yen; socialInsurance: Yen } {
@@ -348,7 +371,7 @@ export function runDeterministic(
   options?: PipelineOptions
 ): SimulationResult {
   const firstYearSameIncome = options?.firstYearResidentTaxAssumesSameIncome ?? true;
-  const rates = deterministicRates(assumptions);
+  const rates = indexationFactors(assumptions, options?.stochasticPaths);
   const { startYear, endAge } = assumptions.simulation;
 
   const oldestBirthYear = Math.min(

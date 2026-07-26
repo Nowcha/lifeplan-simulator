@@ -7,8 +7,9 @@
  * regardless of its own activeTo.
  */
 
-import type { BaseExpenseItem, Rate, Yen, YearMonth } from "../types/index.js";
+import type { BaseExpenseItem, Yen, YearMonth } from "../types/index.js";
 import { indexFactor } from "../income/curve.js";
+import type { IndexationFactors } from "../indexation.js";
 import { monthsActiveInYear } from "../util/yearmonth.js";
 
 export interface ExpenseLine {
@@ -20,7 +21,7 @@ export function annualBaseExpenses(
   items: BaseExpenseItem[],
   year: number,
   startYear: number,
-  rates: { inflation: Rate; wage: Rate },
+  rates: Pick<IndexationFactors, "inflation" | "wage">,
   terminations?: Map<string, YearMonth>
 ): ExpenseLine[] {
   const lines: ExpenseLine[] = [];

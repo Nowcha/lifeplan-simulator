@@ -13,8 +13,9 @@
  * event's yearMonth matters, not the month itself.
  */
 
-import type { OneTimeEvent, Rate, RecurringModifierEvent, Yen } from "../types/index.js";
+import type { OneTimeEvent, RecurringModifierEvent, Yen } from "../types/index.js";
 import { indexFactor } from "../income/curve.js";
+import type { IndexationFactors } from "../indexation.js";
 import { parseYearMonth } from "../util/yearmonth.js";
 
 export interface ExpenseLine {
@@ -39,7 +40,7 @@ export function annualRecurringEvents(
   events: RecurringModifierEvent[],
   year: number,
   simulationStartYear: number,
-  rates: { inflation: Rate; wage: Rate }
+  rates: Pick<IndexationFactors, "inflation" | "wage">
 ): ExpenseLine[] {
   const lines: ExpenseLine[] = [];
   for (const event of events) {

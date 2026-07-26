@@ -2,14 +2,10 @@
  * 資産クラスの年次リターン・基準金利の確率的パス生成(design doc §5
  * Assumptions.assetClasses/baseRate/correlationMatrix, §8 手順9)。
  *
- * スコープ(合意事項): インフレ率・賃金上昇率は Phase 4 v1 では決定論値
- * (mean固定)のまま据え置き、資産クラスのリターンと基準金利(mean-reverting
- * モデルのみ)だけを確率変動させる。インフレ・賃金の複利計算(income/curve.ts,
- * expenses/base.ts, expenses/education.ts)を「年次実現値の累積」へ作り直す
- * 大規模リファクタは別スコープとする。correlationMatrix.factors に
- * "inflation" 等が含まれていても、相関構造を保つために正規乱数ベクトルは
- * 毎年生成するが、その成分は消費しない(このモジュールが返すのは資産クラス
- * と base-rate の実現値のみ)。
+ * 資産クラスのリターン・基準金利に加えて、インフレ率・賃金上昇率も確率変動
+ * させる。これらは correlationMatrix.factors に含めれば資産クラスと相関を
+ * 持たせられる(例: 株式とインフレを正の相関にする)。volatility が 0 の指標は
+ * 実現値が毎年 mean と一致するので、決定論パスと同じ挙動になる。
  */
 
 import type { Assumptions, Rate } from "../types/index.js";
@@ -18,6 +14,9 @@ import { cholesky, correlate } from "./correlation.js";
 import { standardNormal, type Rng } from "./rng.js";
 
 export const BASE_RATE_FACTOR_ID = "base-rate";
+/** correlationMatrix.factors でインフレ・賃金上昇率を指す固定ID */
+export const INFLATION_FACTOR_ID = "inflation";
+export const WAGE_GROWTH_FACTOR_ID = "wage-growth";
 
 /**
  * Draw a log-normal simple return (design doc §5: "資産リターンは対数正規")
@@ -41,6 +40,18 @@ export interface FactorPaths {
   assetReturns: { [assetClassId: string]: Rate[] };
   /** index = year - startYear */
   baseRate: Rate[];
+  /** index = year - startYear */
+  inflation: Rate[];
+  /** index = year - startYear */
+  wageGrowth: Rate[];
+}
+
+/**
+ * インフレ・賃金上昇率は資産リターンと違って正負どちらにも振れる素の率なので、
+ * 対数正規ではなく正規分布で引く(-100%の下限を課す意味がない)。
+ */
+function normalRate(mean: Rate, volatility: Rate, z: number): Rate {
+  return volatility <= 0 ? mean : mean + volatility * z;
 }
 
 /** One correlated (or independent, if not listed in correlationMatrix.factors) standard normal draw per requested factor id, for a single year */
@@ -79,7 +90,12 @@ export function generateFactorPaths(
 ): FactorPaths {
   const assetClassIds = assumptions.assetClasses.map((a) => a.id);
   const wantsBaseRateShock = assumptions.baseRate.model === "mean-reverting";
-  const factorIds = wantsBaseRateShock ? [...assetClassIds, BASE_RATE_FACTOR_ID] : assetClassIds;
+  const factorIds = [
+    ...assetClassIds,
+    ...(wantsBaseRateShock ? [BASE_RATE_FACTOR_ID] : []),
+    INFLATION_FACTOR_ID,
+    WAGE_GROWTH_FACTOR_ID
+  ];
 
   const correlationFactors = assumptions.correlationMatrix.factors;
   const choleskyFactor = cholesky(assumptions.correlationMatrix.matrix);
@@ -87,6 +103,8 @@ export function generateFactorPaths(
   const assetReturns: { [assetClassId: string]: Rate[] } = {};
   for (const id of assetClassIds) assetReturns[id] = [];
   const baseRate: Rate[] = [];
+  const inflation: Rate[] = [];
+  const wageGrowth: Rate[] = [];
 
   // Manual base-rate paths have no defined stochastic component (no
   // volatility field); reuse the same deterministic interpolation as the
@@ -106,6 +124,17 @@ export function generateFactorPaths(
       assetReturns[assetClass.id]?.push(logNormalReturn(assetClass.expectedReturn, assetClass.volatility, z));
     }
 
+    inflation.push(
+      normalRate(assumptions.inflation.mean, assumptions.inflation.volatility, shocks.get(INFLATION_FACTOR_ID) ?? 0)
+    );
+    wageGrowth.push(
+      normalRate(
+        assumptions.wageGrowth.mean,
+        assumptions.wageGrowth.volatility,
+        shocks.get(WAGE_GROWTH_FACTOR_ID) ?? 0
+      )
+    );
+
     if (manualBaseRatePath) {
       baseRate.push(manualBaseRatePath.get(year) ?? assumptions.baseRate.initial);
       continue;
@@ -121,5 +150,5 @@ export function generateFactorPaths(
     }
   }
 
-  return { assetReturns, baseRate };
+  return { assetReturns, baseRate, inflation, wageGrowth };
 }

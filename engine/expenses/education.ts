@@ -17,16 +17,7 @@
  * pipeline.ts `deterministicRates`).
  */
 
-import type {
-  ChildcareCostRules,
-  EducationCosts,
-  EducationIndexation,
-  EducationPlan,
-  Rate,
-  UniversityCost,
-  Yen,
-  YearMonth
-} from "../types/index.js";
+import type { ChildcareCostRules, EducationCosts, EducationIndexation, EducationPlan, UniversityCost, Yen, YearMonth } from "../types/index.js";
 import { ageInYear, parseYearMonth } from "../util/yearmonth.js";
 import type { ExpenseLine } from "./events.js";
 
@@ -37,11 +28,9 @@ export interface ChildEducationInput {
   plan: EducationPlan | undefined;
 }
 
-interface EducationRates {
-  inflation: Rate;
-  wage: Rate;
-  education: Rate;
-}
+import type { IndexationFactors } from "../indexation.js";
+
+type EducationRates = IndexationFactors;
 
 interface AgeRange {
   from: number;
@@ -65,8 +54,7 @@ function educationIndexFactor(
   rates: EducationRates
 ): number {
   if (indexation === "fixed" || yearsElapsed <= 0) return 1;
-  const rate = indexation === "education" ? rates.education : rates.inflation;
-  return Math.pow(1 + rate, yearsElapsed);
+  return indexation === "education" ? rates.education(yearsElapsed) : rates.inflation(yearsElapsed);
 }
 
 function universityCostFor(costs: EducationCosts, university: "national" | "private-liberal" | "private-science"): UniversityCost {

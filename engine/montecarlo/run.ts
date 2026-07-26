@@ -2,7 +2,8 @@
  * モンテカルロ試行の実行(design doc §7 MonteCarloSummary, §8, §9)。
  * assumptions.simulation.paths 回、runDeterministic を「1本の確率的パス」
  * として評価する — 各試行は generateFactorPaths が生成した資産クラス
- * リターン・基準金利の実現値を PipelineOptions.stochasticPaths 経由で注入し、
+ * リターン・基準金利・インフレ率・賃金上昇率の実現値を PipelineOptions.stochasticPaths
+ * 経由で注入し、
  * それ以外(所得・税・給付・支出・ローン月次計算等)は決定論パスと同じロジックを通す。
  * RNGは全試行を通じて1本のストリームを連続消費するので、seed固定で
  * 全体の結果が再現する(design doc §9)。
@@ -46,7 +47,12 @@ export function runMonteCarlo(
 
     const result = runDeterministic(household, events, assumptions, rules, {
       ...pipelineOptions,
-      stochasticPaths: { baseRate: baseRateMap, assetReturns: factorPaths.assetReturns }
+      stochasticPaths: {
+        baseRate: baseRateMap,
+        assetReturns: factorPaths.assetReturns,
+        inflation: factorPaths.inflation,
+        wage: factorPaths.wageGrowth
+      }
     });
     const rows = result.deterministic;
 
