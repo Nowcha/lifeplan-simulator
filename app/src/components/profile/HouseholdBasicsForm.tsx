@@ -5,6 +5,7 @@ import { optionalNumberRules, requiredTextRules, yearMonthRules } from '../../li
 import {
   CO_RESIDENT_ASCENDANT_HELP,
   CO_RESIDENT_ASCENDANT_OPTIONS,
+  CHILD_INCOME_HELP,
   DEPENDENT_INCOME_HELP,
   MUNICIPALITY_HELP,
   municipalityOptions
@@ -111,6 +112,12 @@ export function HouseholdBasicsForm({ control, register }: HouseholdBasicsFormPr
                   label="教育プラン"
                   hint="ライフイベントタブで作成した教育プランから選ぶ"
                   {...register(`household.children.${index}.educationPlanRef`)}
+                />
+                <NumberInput
+                  label="本人の合計所得(任意)"
+                  suffix="円"
+                  help={CHILD_INCOME_HELP}
+                  {...register(`household.children.${index}.annualIncome`, optionalNumberRules({ min: 0 }))}
                 />
               </div>
             </ItemCard>
