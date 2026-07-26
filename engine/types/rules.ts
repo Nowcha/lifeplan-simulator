@@ -38,19 +38,42 @@ export type SalaryIncomePiece =
     }
   | { upTo: Yen | null; type: "rate"; rate: Rate; adjust: Yen };
 
+/**
+ * 配偶者控除 (spouse deduction) — 配偶者の合計所得が `spouseIncomeMax` 以下のとき、
+ * 納税者本人の合計所得に応じた額を控除する。
+ */
+export interface SpouseDeductionRules {
+  /** Spouse qualifies while spouse 合計所得金額 <= this */
+  spouseIncomeMax: Yen;
+  /** Deduction by taxpayer's own 合計所得金額 */
+  steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[];
+  _source?: RuleSource;
+}
+
+/**
+ * 配偶者特別控除 — 配偶者の所得が配偶者控除の要件を超えてから `spouseIncomeMax`
+ * (133万円) までを、配偶者の所得帯 × 本人の所得帯の2次元で埋める。
+ * 配偶者控除とは排他で、調整控除の人的控除額の差の対象にはならない(設計書§8 4-2)。
+ */
+export interface SpouseSpecialDeductionRules {
+  /** 上限。配偶者の 合計所得金額 がこれを超えると適用なし */
+  spouseIncomeMax: Yen;
+  /** 配偶者の合計所得の帯。各帯の中は本人の合計所得で段階化する */
+  brackets: {
+    spouseIncomeUpTo: Yen;
+    steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[];
+  }[];
+  _source?: RuleSource;
+}
+
 export interface IncomeTaxRules {
   brackets: TaxBracket[];
   /** Salary income computed directly (income after 給与所得控除) */
   salaryIncomeNet: { pieces: SalaryIncomePiece[]; _source: RuleSource };
   /** Basic deduction ladder over 合計所得金額 */
   basicDeduction: { steps: { incomeUpTo: Yen | null; amount: Yen }[]; _source: RuleSource };
-  spouseDeduction: {
-    /** Spouse qualifies while spouse 合計所得金額 <= this */
-    spouseIncomeMax: Yen;
-    /** Deduction by taxpayer's own 合計所得金額 */
-    steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[];
-    _source: RuleSource;
-  };
+  spouseDeduction: SpouseDeductionRules;
+  spouseSpecialDeduction: SpouseSpecialDeductionRules;
   dependentDeduction: DependentDeductionRules;
   /** 復興特別所得税 (0.021). From 2027 this bucket represents 復興1.1% + 防衛1% (total unchanged). */
   reconstructionSurtax: Rate;
@@ -64,10 +87,8 @@ export interface ResidentTaxRules {
   /** Per-capita levy (均等割) breakdown */
   perCapita: { city: Yen; pref: Yen; forestEnvironmentTax: Yen };
   basicDeduction: { steps: { incomeUpTo: Yen | null; amount: Yen }[] };
-  spouseDeduction: {
-    spouseIncomeMax: Yen;
-    steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[];
-  };
+  spouseDeduction: SpouseDeductionRules;
+  spouseSpecialDeduction: SpouseSpecialDeductionRules;
   /** 調整控除 (personal-deduction gap credit) */
   adjustmentCredit: {
     basicDeductionGap: Yen;

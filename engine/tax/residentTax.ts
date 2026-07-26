@@ -14,7 +14,7 @@
 
 import type { ResidentTaxRules, Yen } from "../types/index.js";
 import { applyRate, floorTo, stepAmount } from "./rounding.js";
-import { spouseDeductionAmount } from "./incomeTax.js";
+import { spouseDeduction } from "./spouse.js";
 import { classifyDependents, dependentDeductionTotal } from "./dependents.js";
 
 export interface ResidentTaxInput {
@@ -65,7 +65,12 @@ export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
 
   const ideco = input.idecoAnnual ?? 0;
   const basic = stepAmount(rules.basicDeduction.steps, totalIncome);
-  const spouse = spouseDeductionAmount(totalIncome, input.spouseTotalIncome, rules.spouseDeduction);
+  const spouse = spouseDeduction(
+    totalIncome,
+    input.spouseTotalIncome,
+    rules.spouseDeduction,
+    rules.spouseSpecialDeduction
+  );
   const dependentAges = input.dependentAges ?? [];
   const dependents = dependentDeductionTotal(dependentAges, rules.dependentDeduction);
 
@@ -83,7 +88,7 @@ export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
   }
 
   const taxableIncome = floorTo(
-    Math.max(0, totalIncome - (socialInsurancePaid + ideco + basic + spouse + dependents)),
+    Math.max(0, totalIncome - (socialInsurancePaid + ideco + basic + spouse.amount + dependents)),
     1000
   );
 
@@ -95,7 +100,8 @@ export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
   if (totalIncome <= ac.incomeLimit && taxableIncome > 0) {
     const gap =
       ac.basicDeductionGap +
-      (spouse > 0 ? stepAmount(ac.spouseDeductionGap.steps, totalIncome) : 0) +
+      // 配偶者特別控除は人的控除額の差の対象外(全帯「適用無」)。配偶者控除のときだけ乗る
+      (spouse.kind === "ordinary" && spouse.amount > 0 ? stepAmount(ac.spouseDeductionGap.steps, totalIncome) : 0) +
       counts.general * ac.generalDependentGap +
       counts.specific * ac.specificDependentGap;
     const rateTotal = ac.rateCity + ac.ratePref;

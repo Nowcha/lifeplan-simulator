@@ -1,12 +1,13 @@
 /**
  * National income tax for a salaried resident:
- * 合計所得 → 所得控除 (social insurance actual, iDeCo, basic, spouse, dependents)
+ * 合計所得 → 所得控除 (social insurance actual, iDeCo, basic, spouse/spouse-special, dependents)
  * → progressive brackets → 復興特別所得税 surtax → final 100-yen floor.
  */
 
 import type { IncomeTaxRules, Rate, Yen } from "../types/index.js";
 import { applyRate, floorTo, stepAmount } from "./rounding.js";
 import { dependentDeductionTotal } from "./dependents.js";
+import { spouseDeduction } from "./spouse.js";
 
 export interface IncomeTaxInput {
   /** 合計所得金額 (Phase 1: salary income only) */
@@ -39,22 +40,18 @@ export interface IncomeTaxResult {
   };
 }
 
-export function spouseDeductionAmount(
-  ownerTotalIncome: Yen,
-  spouseTotalIncome: Yen | undefined,
-  config: { spouseIncomeMax: Yen; steps: { ownerIncomeUpTo: Yen | null; amount: Yen }[] }
-): Yen {
-  if (spouseTotalIncome === undefined || spouseTotalIncome > config.spouseIncomeMax) return 0;
-  return stepAmount(config.steps, ownerTotalIncome);
-}
-
 export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxResult {
   const { totalIncome, socialInsurancePaid, rules } = input;
   const ideco = input.idecoAnnual ?? 0;
   const basic = stepAmount(rules.basicDeduction.steps, totalIncome);
-  const spouse = spouseDeductionAmount(totalIncome, input.spouseTotalIncome, rules.spouseDeduction);
+  const spouse = spouseDeduction(
+    totalIncome,
+    input.spouseTotalIncome,
+    rules.spouseDeduction,
+    rules.spouseSpecialDeduction
+  );
   const dependents = dependentDeductionTotal(input.dependentAges ?? [], rules.dependentDeduction);
-  const totalDeductions = socialInsurancePaid + ideco + basic + spouse + dependents;
+  const totalDeductions = socialInsurancePaid + ideco + basic + spouse.amount + dependents;
 
   // 課税所得: floor to 1,000 yen
   const taxableIncome = floorTo(Math.max(0, totalIncome - totalDeductions), 1000);
@@ -76,6 +73,13 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxResult {
     taxableIncome,
     tax,
     marginalRate,
-    deductions: { socialInsurance: socialInsurancePaid, ideco, basic, spouse, dependents, total: totalDeductions }
+    deductions: {
+      socialInsurance: socialInsurancePaid,
+      ideco,
+      basic,
+      spouse: spouse.amount,
+      dependents,
+      total: totalDeductions
+    }
   };
 }

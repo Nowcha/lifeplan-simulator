@@ -143,6 +143,31 @@ describe("扶養控除と調整控除", () => {
   });
 });
 
+describe("配偶者特別控除は調整控除の対象外", () => {
+  // 江東区・税額控除の種類の一覧で、配偶者特別控除の「差」は全帯「適用無」。
+  // 注記: 「改正により扶養の範囲が引き上げられたことや、新たに控除の適用を受け、
+  // 控除差による新たな負担増が生じることはないため、調整控除の対象とはならない」
+  // https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/zeikoujo.html (確認日 2026-07-26)
+  const low = { totalIncome: 2500000, socialInsurancePaid: 350000, rules };
+
+  test("配偶者控除のときは差5万が乗るが、配偶者特別控除では乗らない", () => {
+    const ordinary = computeResidentTax({ ...low, spouseTotalIncome: 620000 });
+    const special = computeResidentTax({ ...low, spouseTotalIncome: 620001 });
+
+    // 基礎5万 + 配偶者5万 = 10万 × 5%
+    expect(ordinary.adjustmentCredit).toBe(5000);
+    // 基礎5万のみ × 5%(控除額そのものは同じ33万でも、差は乗らない)
+    expect(special.adjustmentCredit).toBe(2500);
+  });
+
+  test("控除額自体は境界の前後で同額(崖が無い)", () => {
+    const ordinary = computeResidentTax({ ...low, spouseTotalIncome: 620000 });
+    const special = computeResidentTax({ ...low, spouseTotalIncome: 620001 });
+
+    expect(ordinary.taxableIncome).toBe(special.taxableIncome);
+  });
+});
+
 describe("調整控除における配偶者控除の人的控除額の差", () => {
   // 一次情報: 江東区・税額控除の種類(調整控除の人的控除額の差)
   // https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/zeikoujo.html (確認日 2026-07-25)

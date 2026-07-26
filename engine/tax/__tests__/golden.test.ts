@@ -230,16 +230,28 @@ describe("ゴールデンテスト: 独身・東京・協会けんぽ・40歳未
     expectWithin(net, 4733900);
   });
 
-  test("配偶者所得が62万円を超えると配偶者控除は適用されない", () => {
+  /**
+   * 配偶者控除の所得要件(62万円)を超えた先は配偶者特別控除が引き継ぐため、控除額に
+   * 崖はできない。133万円を超えて初めて適用がなくなる。
+   * 一次情報: 国税庁「令和8年4月 源泉所得税の改正のあらまし」(参考)改正後の
+   * 配偶者特別控除額の表 https://www.nta.go.jp/publication/pamph/gensen/2026kaisei.pdf
+   */
+  test("配偶者の所得が62万円を超えても控除は崖にならず、133万円超で消える", () => {
     const gross = 500000 * 12;
     const si = annualSocialInsurance(500000);
     const income = salaryIncome(gross, rules.incomeTax);
-    const withSpouseOverLimit = computeIncomeTax({
-      totalIncome: income,
-      socialInsurancePaid: si,
-      spouseTotalIncome: 620001,
-      rules: rules.incomeTax
-    });
-    expect(withSpouseOverLimit.deductions.spouse).toBe(0);
+    const spouseDeductionAt = (spouseTotalIncome: Yen): Yen =>
+      computeIncomeTax({ totalIncome: income, socialInsurancePaid: si, spouseTotalIncome, rules: rules.incomeTax })
+        .deductions.spouse;
+
+    // 62万円ちょうどは配偶者控除、1円超えると配偶者特別控除。どちらも38万円
+    expect(spouseDeductionAt(620000)).toBe(380000);
+    expect(spouseDeductionAt(620001)).toBe(380000);
+    // 95万円を超えてから逓減が始まる
+    expect(spouseDeductionAt(950000)).toBe(380000);
+    expect(spouseDeductionAt(950001)).toBe(360000);
+    // 133万円が上限
+    expect(spouseDeductionAt(1330000)).toBe(30000);
+    expect(spouseDeductionAt(1330001)).toBe(0);
   });
 });
