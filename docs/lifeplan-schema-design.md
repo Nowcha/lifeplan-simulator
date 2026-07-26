@@ -291,7 +291,13 @@ interface StochasticVar { mean: Rate; volatility: Rate; }
 
 **パス生成の仕様**: 相関行列をCholesky分解し、月次ではなく**年次**で相関乱数を生成(資産リターンは対数正規)。基準金利のみ年次値を月次に展開してローン計算に渡す。シード付きPRNGは `mulberry32` などの軽量実装で可。
 
-**Phase 4 v1 のスコープ限定(承認済み)**: `inflation`/`wageGrowth` は `StochasticVar` 型のまま残すが、Phase 4 v1では確率変動させず決定論値(mean固定)で据え置く。理由: `income/curve.ts`・`expenses/base.ts`・`expenses/education.ts` の複利計算が「年率のyearsElapsed乗」実装になっており、年次実現値を変動させるには「年次実現値の累積積」への作り直しが必要で、Phase 1-3の既存テスト資産に触れるリスクが大きいため。資産クラスのリターンと基準金利(`mean-reverting`モデルのみ)だけを確率変動させる(`engine/montecarlo/paths.ts`)。インフレ・賃金の確率化は将来のフェーズで別途対応する。
+**インフレ・賃金の確率化(Phase 4 v1では見送り → 実装済み)**: 当初は `inflation`/`wageGrowth` を決定論値(mean固定)で据え置いていた。理由は `income/curve.ts`・`expenses/base.ts`・`expenses/education.ts` の複利計算が「年率のyearsElapsed乗」実装で、年次実現値を反映するには「年次実現値の累積積」への作り直しが必要であり、Phase 1-3の既存テスト資産に触れるリスクが大きいと判断したため。
+
+現在は `engine/indexation.ts` に「経過年数 → 累積倍率」を供給する層を挟むことで解決している。決定論パスは従来どおり `(1+r)^n`(`constantFactor`)、モンテカルロ試行は年次実現値の累積積(`pathFactor`)を使い、複利を消費する側は両者を区別しない。**決定論パスの計算式を変えていないため、既存の期待値パスの結果は1円も動かない**(累積積で書き直すと `(1+r)^n` と浮動小数点で一致せず既存テストが壊れるため、あえて実装を分けている)。
+
+確率変動させる因子は `engine/montecarlo/paths.ts` が生成する: 資産クラスのリターン(対数正規)、基準金利(`mean-reverting`モデルのみ)、インフレ率・賃金上昇率(正規分布 — 資産リターンと違い素の率なのでマイナスに振れてよい)。インフレ・賃金は `correlationMatrix.factors` に `"inflation"` / `"wage-growth"` として載せれば資産クラスと相関を持たせられる。`volatility` が0なら毎年 mean と一致し、決定論パスと同じ挙動になる。
+
+教育費のインフレは独立した確率因子を持たせず、一般物価の実現値に決定論での差分(教育率 − 物価率)を上乗せして追随させる。
 
 ## 6. ルールファイル `rules/2026.json`(抜粋構造)
 
