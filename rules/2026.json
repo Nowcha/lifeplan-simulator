@@ -58,13 +58,20 @@
       "_source": {
         "url": "https://www.nta.go.jp/publication/pamph/gensen/2026kaisei.pdf",
         "confirmedOn": "2026-07-11",
-        "note": "令和8年度改正: 同一生計配偶者の所得要件は62万円以下(給与収入136万円以下)。控除額38/26/13万円(本人合計所得900/950/1,000万円区分)は従来通り。配偶者所得が62万円を超える帯は spouseSpecialDeduction(配偶者特別控除)が引き継ぐ。老人配偶者(70歳以上)の割増48万円は世帯モデルに配偶者の年齢区分が無いためスコープ外(設計書§8 4-2)"
+        "note": "令和8年度改正: 同一生計配偶者の所得要件は62万円以下(給与収入136万円以下)。控除額38/26/13万円(本人合計所得900/950/1,000万円区分)は従来通り。配偶者所得が62万円を超える帯は spouseSpecialDeduction(配偶者特別控除)が引き継ぐ。老人控除対象配偶者(その年12月31日現在70歳以上)は48/32/16万円 — 国税庁 タックスアンサーNo.1191"
       },
       "spouseIncomeMax": 620000,
+      "elderlyFromAge": 70,
       "steps": [
         { "ownerIncomeUpTo": 9000000, "amount": 380000 },
         { "ownerIncomeUpTo": 9500000, "amount": 260000 },
         { "ownerIncomeUpTo": 10000000, "amount": 130000 },
+        { "ownerIncomeUpTo": null, "amount": 0 }
+      ],
+      "elderlySteps": [
+        { "ownerIncomeUpTo": 9000000, "amount": 480000 },
+        { "ownerIncomeUpTo": 9500000, "amount": 320000 },
+        { "ownerIncomeUpTo": 10000000, "amount": 160000 },
         { "ownerIncomeUpTo": null, "amount": 0 }
       ]
     },
@@ -123,11 +130,23 @@
       ]
     },
     "spouseDeduction": {
+      "_source": {
+        "url": "https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/zeikoujo.html",
+        "confirmedOn": "2026-07-26",
+        "note": "江東区・税額控除の種類(調整控除の人的控除額の差)の配偶者控除の行。一般33/22/11万円、老人配偶者(70歳以上)38/26/13万円(所得税48/32/16万円に対応)"
+      },
       "spouseIncomeMax": 620000,
+      "elderlyFromAge": 70,
       "steps": [
         { "ownerIncomeUpTo": 9000000, "amount": 330000 },
         { "ownerIncomeUpTo": 9500000, "amount": 220000 },
         { "ownerIncomeUpTo": 10000000, "amount": 110000 },
+        { "ownerIncomeUpTo": null, "amount": 0 }
+      ],
+      "elderlySteps": [
+        { "ownerIncomeUpTo": 9000000, "amount": 380000 },
+        { "ownerIncomeUpTo": 9500000, "amount": 260000 },
+        { "ownerIncomeUpTo": 10000000, "amount": 130000 },
         { "ownerIncomeUpTo": null, "amount": 0 }
       ]
     },
@@ -135,9 +154,17 @@
       "_source": {
         "url": "https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/zeikoujo.html",
         "confirmedOn": "2026-07-25",
-        "note": "江東区・税額控除の種類(調整控除の人的控除額の差): 基礎控除5万円、配偶者控除は本人の合計所得金額により5万円(900万円以下)/4万円(900万円超950万円以下)/2万円(950万円超1,000万円以下)、扶養控除は一般5万円(38万-33万)・特定18万円(63万-45万)。老人10万円(48万-38万)・同居老親13万円(58万-45万)。配偶者特別控除は適用無。合計課税所得200万円以下は差額と課税所得の少ない方の5%(都2%+区3%)、200万円超は{差額-(課税所得-200万)}の5%で最低2,500円"
+        "note": "江東区・税額控除の種類(調整控除の人的控除額の差): 基礎控除5万円、配偶者控除は本人の合計所得金額により5万円(900万円以下)/4万円(900万円超950万円以下)/2万円(950万円超1,000万円以下)、老人配偶者は10万円/6万円/3万円、扶養控除は一般5万円(38万-33万)・特定18万円(63万-45万)。老人10万円(48万-38万)・同居老親13万円(58万-45万)。配偶者特別控除は適用無。合計課税所得200万円以下は差額と課税所得の少ない方の5%(都2%+区3%)、200万円超は{差額-(課税所得-200万)}の5%で最低2,500円"
       },
       "basicDeductionGap": 50000,
+      "spouseElderlyDeductionGap": {
+        "steps": [
+          { "ownerIncomeUpTo": 9000000, "amount": 100000 },
+          { "ownerIncomeUpTo": 9500000, "amount": 60000 },
+          { "ownerIncomeUpTo": 10000000, "amount": 30000 },
+          { "ownerIncomeUpTo": null, "amount": 0 }
+        ]
+      },
       "spouseDeductionGap": {
         "steps": [
           { "ownerIncomeUpTo": 9000000, "amount": 50000 },
