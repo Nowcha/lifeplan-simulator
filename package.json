@@ -6,6 +6,7 @@
   "description": "High-precision life plan simulator (pure TS engine, deterministic core + Monte Carlo wrapper)",
   "scripts": {
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint engine scripts",
@@ -14,10 +15,11 @@
   "devDependencies": {
     "@eslint/js": "^9.17.0",
     "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^9.17.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.19.0",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.10"
   }
 }
