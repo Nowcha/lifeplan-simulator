@@ -1,6 +1,7 @@
 import { forwardRef, useId, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
 import { useFormState } from 'react-hook-form'
 import { fieldErrorMessage } from '../../lib/fieldError'
+import { MaterialIcon } from './MaterialIcon'
 
 /** Field が入力要素に渡す属性。各入力ラッパーはこれをそのまま展開する。 */
 export interface FieldControlAttributes {
@@ -84,7 +85,7 @@ export function HelpBadge({ text }: { text: string }) {
         aria-expanded={open}
         className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-hairline-strong text-[10px] leading-none text-ink-muted hover:border-amber-500 hover:text-amber-700"
       >
-        ?
+        <MaterialIcon name="help" />
       </button>
       {open && (
         <span
@@ -261,8 +262,9 @@ export function ItemCard({ title, onRemove, getRemoveWarning, children }: ItemCa
               const message = warning === undefined ? `${base}よろしいですか?` : `${base}\n\n${warning}\n\n削除しますか?`
               if (window.confirm(message)) onRemove()
             }}
-            className="-my-2 shrink-0 px-2 py-2 text-xs text-ink-muted hover:text-critical"
+            className="-my-2 inline-flex shrink-0 items-center gap-1 px-2 py-2 text-xs text-ink-muted hover:text-critical"
           >
+            <MaterialIcon name="delete" />
             削除
           </button>
         )}
@@ -277,9 +279,10 @@ export function AddButton({ onClick, label }: { onClick: () => void; label: stri
     <button
       type="button"
       onClick={onClick}
-      className="rounded-sm border border-dashed border-hairline-strong px-4 py-2 text-sm text-ink-secondary hover:border-amber-500 hover:text-amber-700"
+      className="inline-flex items-center gap-1 rounded-sm border border-dashed border-hairline-strong px-4 py-2 text-sm text-ink-secondary hover:border-amber-500 hover:text-amber-700"
     >
-      + {label}
+      <MaterialIcon name="add" />
+      {label}
     </button>
   )
 }

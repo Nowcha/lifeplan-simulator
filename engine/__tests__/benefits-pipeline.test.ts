@@ -167,4 +167,25 @@ describe("出産・育休イベント統合 (2026〜2030)", () => {
     expect(b2027?.income["partner-b"]?.gross).toBe(300000 * 12);
     expect(b2027?.benefits).toEqual([]);
   });
+
+  test("世帯と出産イベントに同じchildIdがあっても子どもの給付を二重計上しない", () => {
+    const householdWithPlannedChild: Household = {
+      ...household,
+      children: [
+        {
+          id: "c1",
+          birthYearMonth: childbirth.expectedYearMonth,
+          educationPlanRef: ""
+        }
+      ]
+    };
+
+    const result = runDeterministic(householdWithPlannedChild, [childbirth], assumptions, rules);
+    const birthYear = result.deterministic.find((row) => row.year === 2027);
+    const childAllowanceLines = birthYear?.benefits.filter((line) => line.label === "児童手当(c1)") ?? [];
+    const tokyo018Lines = birthYear?.benefits.filter((line) => line.label === "018サポート(c1)") ?? [];
+
+    expect(childAllowanceLines).toHaveLength(1);
+    expect(tokyo018Lines).toHaveLength(1);
+  });
 });

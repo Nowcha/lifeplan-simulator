@@ -43,3 +43,19 @@ body {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+.material-symbols-outlined {
+  display: inline-block;
+  font-family: "Material Symbols Outlined";
+  font-style: normal;
+  font-weight: 400;
+  font-size: 1.25em;
+  font-feature-settings: "liga";
+  letter-spacing: normal;
+  line-height: 1;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  vertical-align: middle;
+}

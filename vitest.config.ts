@@ -6,7 +6,13 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["engine/**/*.ts"],
-      exclude: ["engine/**/__tests__/**", "engine/types/**"]
+      exclude: ["engine/**/__tests__/**", "engine/types/**"],
+      thresholds: {
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80
+      }
     }
   }
 });

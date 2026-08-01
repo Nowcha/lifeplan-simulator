@@ -1,6 +1,7 @@
 import { useFieldArray, useFormContext, useWatch, type Control, type UseFormRegister, type UseFormSetValue } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { AddButton, HelpBadge, ItemCard, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
+import { MaterialIcon } from '../form/MaterialIcon'
 import { BASE_RATE_MODEL_HELP, BASE_RATE_MODEL_OPTIONS } from '../../lib/formOptions'
 import { numberRules, requiredTextRules } from '../../lib/validation'
 import { describeReferences } from '../../lib/references'
@@ -124,8 +125,9 @@ export function AssumptionsForm({ control, register, setValue }: AssumptionsForm
                   <button
                     type="button"
                     onClick={() => manualPath.remove(index)}
-                    className="h-fit pb-1.5 text-xs text-ink-muted hover:text-critical"
+                    className="inline-flex h-fit items-center gap-1 pb-1.5 text-xs text-ink-muted hover:text-critical"
                   >
+                    <MaterialIcon name="delete" />
                     削除
                   </button>
                 </div>
@@ -202,7 +204,10 @@ function CorrelationMatrixEditor({
       ) : (
         <div className="overflow-x-auto">
           {/* 行列は折り返せないため横スクロール前提。スクロールできることを明示する */}
-          <p className="mb-2 text-xs text-ink-muted sm:hidden">← 横にスクロールすると全ての要因を表示できます</p>
+          <p className="mb-2 flex items-center gap-1 text-xs text-ink-muted sm:hidden">
+            <MaterialIcon name="arrow_back" />
+            横にスクロールすると全ての要因を表示できます
+          </p>
           <table className="border-collapse text-sm">
             <tbody>
               {cm.factors.map((factor, i) => {
@@ -222,8 +227,13 @@ function CorrelationMatrixEditor({
                             className="min-h-11 w-32 rounded-sm border border-hairline-strong bg-surface px-2 py-1 text-base text-ink outline-none focus:border-amber-500 sm:min-h-0 sm:text-xs"
                           />
                         )}
-                        <button type="button" onClick={() => removeFactor(i)} className="text-xs text-ink-muted hover:text-critical">
-                          ×
+                        <button
+                          type="button"
+                          onClick={() => removeFactor(i)}
+                          aria-label={`${factor}を削除`}
+                          className="text-base text-ink-muted hover:text-critical"
+                        >
+                          <MaterialIcon name="delete" />
                         </button>
                       </div>
                     </td>

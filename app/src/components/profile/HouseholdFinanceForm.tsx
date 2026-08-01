@@ -3,6 +3,7 @@ import { useFieldArray, useFormContext, type Control, type UseFormRegister, type
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, HelpBadge, ItemCard, MonthInput, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
+import { MaterialIcon } from '../form/MaterialIcon'
 import { AssetClassPicker } from './pickers'
 import { describeReferences, renameExpenseLabelReferences } from '../../lib/references'
 import { useUndo } from '../../lib/undoContext'
@@ -238,8 +239,8 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
                 {...register('household.savingsPolicy.drawdown.strategy')}
               />
               <NumberInput
-                label="金額 / 率"
-                hint="定額=円、定率=0.04など小数"
+                label="金額 / 率(将来機能)"
+                hint="現在の計算では未使用。定額=円、定率=0.04など小数"
                 step="any"
                 {...register('household.savingsPolicy.drawdown.value', numberRules({ min: 0 }))}
               />
@@ -269,8 +270,9 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
                     <button
                       type="button"
                       onClick={() => drawdownOrder.remove(index)}
-                      className="text-xs text-ink-muted hover:text-critical"
+                      className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-critical"
                     >
+                      <MaterialIcon name="delete" />
                       削除
                     </button>
                   </div>

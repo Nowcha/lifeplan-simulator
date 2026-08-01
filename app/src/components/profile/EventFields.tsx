@@ -13,6 +13,7 @@ import {
 } from '../../lib/educationCost'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput, TextInput } from '../form/fields'
+import { MaterialIcon } from '../form/MaterialIcon'
 import { ChildPicker, ExpenseLabelPicker, LoanPicker, PersonPicker } from './pickers'
 import { describeReferences } from '../../lib/references'
 import { useUndo } from '../../lib/undoContext'
@@ -197,8 +198,9 @@ export function HousingPurchaseEventFields({ index, control, register, setValue 
               <button
                 type="button"
                 onClick={() => terminatesLabels.remove(i)}
-                className="min-h-11 shrink-0 px-2 pb-2 text-xs text-ink-muted hover:text-critical sm:min-h-0"
+                className="inline-flex min-h-11 shrink-0 items-center gap-1 px-2 pb-2 text-xs text-ink-muted hover:text-critical sm:min-h-0"
               >
+                <MaterialIcon name="delete" />
                 削除
               </button>
             </div>
@@ -404,8 +406,9 @@ export function EducationPlanFields({ index, control, register }: EventFieldsPro
               <button
                 type="button"
                 onClick={() => extracurricular.remove(exIndex)}
-                className="h-fit pb-1.5 text-xs text-ink-muted hover:text-critical"
+                className="inline-flex h-fit items-center gap-1 pb-1.5 text-xs text-ink-muted hover:text-critical"
               >
+                <MaterialIcon name="delete" />
                 削除
               </button>
             </div>

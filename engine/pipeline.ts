@@ -161,23 +161,52 @@ function indexationFactors(
  */
 function collectChildrenForEducation(household: Household, events: LifeEvent[]): ChildEducationInput[] {
   const educationEvents = events.filter((e): e is EducationPlan => e.type === "education");
+  const childrenById = new Map<string, ChildEducationInput>();
 
-  const fromHousehold: ChildEducationInput[] = household.children.map((child) => ({
-    childId: child.id,
-    birthYearMonth: child.birthYearMonth,
-    plan: educationEvents.find((e) => e.id === child.educationPlanRef),
-    annualIncome: child.annualIncome
-  }));
+  for (const child of household.children) {
+    childrenById.set(child.id, {
+      childId: child.id,
+      birthYearMonth: child.birthYearMonth,
+      plan: educationEvents.find((e) => e.id === child.educationPlanRef),
+      annualIncome: child.annualIncome
+    });
+  }
 
-  const fromEvents: ChildEducationInput[] = events
-    .filter((e): e is ChildbirthEvent => e.type === "childbirth")
-    .map((e) => ({
-      childId: e.childId,
-      birthYearMonth: e.expectedYearMonth,
-      plan: educationEvents.find((p) => p.childId === e.childId)
-    }));
+  for (const event of events.filter((e): e is ChildbirthEvent => e.type === "childbirth")) {
+    // The editor can link a childbirth event to a planned child that already
+    // exists in household.children. Keep the richer household record in that
+    // case and only synthesize a child for event-only profiles. Without this
+    // identity merge, benefits, education expenses and dependent deductions
+    // are all counted twice for the same childId.
+    if (childrenById.has(event.childId)) continue;
+    childrenById.set(event.childId, {
+      childId: event.childId,
+      birthYearMonth: event.expectedYearMonth,
+      plan: educationEvents.find((plan) => plan.childId === event.childId)
+    });
+  }
 
-  return [...fromHousehold, ...fromEvents];
+  return Array.from(childrenById.values());
+}
+
+function assertSupportedProfile(household: Household): void {
+  for (const person of household.persons) {
+    if (person.employment.type === "self-employed") {
+      throw new Error(
+        `Self-employed profiles are not supported: ${person.id}（自営業の所得・国民健康保険・国民年金は未実装です）`
+      );
+    }
+    if ((person.retirementLumpSum ?? 0) > 0) {
+      throw new Error(
+        `Retirement lump sum is not supported: ${person.id}（退職金と退職所得課税は未実装です）`
+      );
+    }
+    if ((person.deductions.lifeInsurancePremiumAnnual ?? 0) > 0) {
+      throw new Error(
+        `Life insurance premium deduction is not supported: ${person.id}（生命保険料控除は未実装です）`
+      );
+    }
+  }
 }
 
 /**
@@ -372,6 +401,7 @@ export function runDeterministic(
   rules: RuleSet,
   options?: PipelineOptions
 ): SimulationResult {
+  assertSupportedProfile(household);
   const firstYearSameIncome = options?.firstYearResidentTaxAssumesSameIncome ?? true;
   const rates = indexationFactors(assumptions, options?.stochasticPaths);
   const { startYear, endAge } = assumptions.simulation;

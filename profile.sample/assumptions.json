@@ -8,7 +8,7 @@
     { "id": "現金", "expectedReturn": 0.0, "volatility": 0.0 }
   ],
   "correlationMatrix": {
-    "factors": ["世界株式", "債券", "インフレ率", "base-rate"],
+    "factors": ["世界株式", "債券", "inflation", "base-rate"],
     "matrix": [
       [1.0, 0.2, 0.1, 0.15],
       [0.2, 1.0, -0.1, 0.4],

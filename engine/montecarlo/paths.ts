@@ -18,6 +18,28 @@ export const BASE_RATE_FACTOR_ID = "base-rate";
 export const INFLATION_FACTOR_ID = "inflation";
 export const WAGE_GROWTH_FACTOR_ID = "wage-growth";
 
+function validateCorrelationFactors(assumptions: Assumptions): void {
+  const factors = assumptions.correlationMatrix.factors;
+  if (new Set(factors).size !== factors.length) {
+    throw new Error("Correlation factor IDs must be unique");
+  }
+
+  const allowedFactors = new Set([
+    ...assumptions.assetClasses.map((assetClass) => assetClass.id),
+    BASE_RATE_FACTOR_ID,
+    INFLATION_FACTOR_ID,
+    WAGE_GROWTH_FACTOR_ID
+  ]);
+  const unknownFactor = factors.find((factor) => !allowedFactors.has(factor));
+  if (unknownFactor !== undefined) {
+    throw new Error(`Unknown correlation factor: ${unknownFactor}`);
+  }
+
+  if (assumptions.correlationMatrix.matrix.length !== factors.length) {
+    throw new Error("Correlation matrix size must match the number of factors");
+  }
+}
+
 /**
  * Draw a log-normal simple return (design doc §5: "資産リターンは対数正規")
  * calibrated so that its ARITHMETIC mean/volatility match expectedReturn/
@@ -88,6 +110,7 @@ export function generateFactorPaths(
   endYear: number,
   rng: Rng
 ): FactorPaths {
+  validateCorrelationFactors(assumptions);
   const assetClassIds = assumptions.assetClasses.map((a) => a.id);
   const wantsBaseRateShock = assumptions.baseRate.model === "mean-reverting";
   const factorIds = [

@@ -1,5 +1,6 @@
 import { formatManYen } from '../lib/format'
 import type { FanChartSeries } from './charts/FanChart'
+import { MaterialIcon } from './form/MaterialIcon'
 
 interface DataTableProps {
   data: FanChartSeries
@@ -12,7 +13,10 @@ export function DataTable({ data }: DataTableProps) {
   return (
     <>
       {/* 狭い画面では表が横にはみ出す。スクロールできることを明示しないと列の存在に気づけない */}
-      <p className="mb-2 text-xs text-ink-muted sm:hidden">← 横にスクロールすると全ての列を表示できます</p>
+      <p className="mb-2 flex items-center gap-1 text-xs text-ink-muted sm:hidden">
+        <MaterialIcon name="arrow_back" />
+        横にスクロールすると全ての列を表示できます
+      </p>
       <div className="max-h-80 overflow-auto border border-hairline">
       <table className="w-full min-w-[640px] border-collapse text-sm whitespace-nowrap">
         <thead className="sticky top-0 bg-surface-2 text-xs text-ink-secondary">
