@@ -81,4 +81,31 @@ describe("決定論パイプライン (サンプル世帯)", () => {
     if (!first) return;
     expect(first.furusatoNozeiLimit["partner-a"]).toBeGreaterThan(0);
   });
+
+  test("未対応の自営業プロフィールを収入ゼロとして黙って計算しない", () => {
+    const unsupported: Household = structuredClone(sampleHousehold);
+    const firstPerson = unsupported.persons[0];
+    if (!firstPerson) throw new Error("sample person is required");
+    firstPerson.employment.type = "self-employed";
+
+    expect(() => runDeterministic(unsupported, [], sampleAssumptions, rules)).toThrow(/Self-employed/);
+  });
+
+  test("未対応の退職金を無視して計算しない", () => {
+    const unsupported: Household = structuredClone(sampleHousehold);
+    const firstPerson = unsupported.persons[0];
+    if (!firstPerson) throw new Error("sample person is required");
+    firstPerson.retirementLumpSum = 10_000_000;
+
+    expect(() => runDeterministic(unsupported, [], sampleAssumptions, rules)).toThrow(/Retirement lump sum/);
+  });
+
+  test("未対応の生命保険料控除を無視して計算しない", () => {
+    const unsupported: Household = structuredClone(sampleHousehold);
+    const firstPerson = unsupported.persons[0];
+    if (!firstPerson) throw new Error("sample person is required");
+    firstPerson.deductions.lifeInsurancePremiumAnnual = 120_000;
+
+    expect(() => runDeterministic(unsupported, [], sampleAssumptions, rules)).toThrow(/Life insurance premium/);
+  });
 });
