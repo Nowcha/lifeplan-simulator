@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import sampleAssumptionsJson from "../../../profile.sample/assumptions.json";
 import type { Assumptions } from "../../types/index.js";
 import { createRng } from "../rng.js";
 import { generateFactorPaths } from "../paths.js";
@@ -19,6 +20,61 @@ function baseAssumptions(overrides: Partial<Assumptions> = {}): Assumptions {
 }
 
 describe("generateFactorPaths", () => {
+  test("標準サンプルはエンジンが認識するinflation要因IDを使う", () => {
+    const sampleAssumptions = sampleAssumptionsJson as Assumptions;
+
+    expect(sampleAssumptions.correlationMatrix.factors).toContain("inflation");
+    expect(sampleAssumptions.correlationMatrix.factors).not.toContain("インフレ率");
+  });
+
+  test("未知の相関要因IDを拒否する", () => {
+    const assumptions = baseAssumptions({
+      correlationMatrix: { factors: ["インフレ率"], matrix: [[1]] }
+    });
+
+    expect(() => generateFactorPaths(assumptions, 2026, 2026, createRng(1))).toThrow(
+      /Unknown correlation factor/
+    );
+  });
+
+  test("対称でない相関行列を拒否する", () => {
+    const assumptions = baseAssumptions({
+      correlationMatrix: {
+        factors: ["global-equity", "bonds"],
+        matrix: [
+          [1, 0.8],
+          [0.2, 1]
+        ]
+      }
+    });
+
+    expect(() => generateFactorPaths(assumptions, 2026, 2026, createRng(1))).toThrow(
+      /symmetric/
+    );
+  });
+
+  test("正定値でない相関行列を拒否する", () => {
+    const assumptions = baseAssumptions({
+      assetClasses: [
+        { id: "a", expectedReturn: 0, volatility: 0.1 },
+        { id: "b", expectedReturn: 0, volatility: 0.1 },
+        { id: "c", expectedReturn: 0, volatility: 0.1 }
+      ],
+      correlationMatrix: {
+        factors: ["a", "b", "c"],
+        matrix: [
+          [1, 0.9, 0.9],
+          [0.9, 1, -0.9],
+          [0.9, -0.9, 1]
+        ]
+      }
+    });
+
+    expect(() => generateFactorPaths(assumptions, 2026, 2026, createRng(1))).toThrow(
+      /positive definite/
+    );
+  });
+
   test("startYear〜endYearの全年分のリターン配列を返す(資産クラスごと)", () => {
     const rng = createRng(1);
     const paths = generateFactorPaths(baseAssumptions(), 2026, 2030, rng);
