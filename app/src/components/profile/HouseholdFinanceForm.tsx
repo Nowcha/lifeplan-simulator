@@ -238,8 +238,8 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
                 {...register('household.savingsPolicy.drawdown.strategy')}
               />
               <NumberInput
-                label="金額 / 率"
-                hint="定額=円、定率=0.04など小数"
+                label="金額 / 率(将来機能)"
+                hint="現在の計算では未使用。定額=円、定率=0.04など小数"
                 step="any"
                 {...register('household.savingsPolicy.drawdown.value', numberRules({ min: 0 }))}
               />

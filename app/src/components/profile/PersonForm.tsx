@@ -36,7 +36,9 @@ export function PersonForm({ index, control, register, onRemove, getRemoveWarnin
           label="就業形態"
           help={EMPLOYMENT_TYPE_HELP}
           options={[...EMPLOYMENT_TYPE_OPTIONS]}
-          {...register(`${path}.employment.type`)}
+          {...register(`${path}.employment.type`, {
+            validate: (value) => value !== 'self-employed' || '自営業は現在計算できません'
+          })}
         />
         <SelectInput
           label="健康保険"
@@ -51,7 +53,8 @@ export function PersonForm({ index, control, register, onRemove, getRemoveWarnin
           {...register(`${path}.employment.kumiaiRate`, optionalNumberRules({ min: 0, max: 1 }))}
         />
         <NumberInput
-          label="退職金(任意)"
+          label="退職金(未対応)"
+          hint="現在は計算に反映されず、入力すると計算を停止します"
           suffix="円"
           {...register(`${path}.retirementLumpSum`, optionalNumberRules({ min: 0 }))}
         />
@@ -61,7 +64,8 @@ export function PersonForm({ index, control, register, onRemove, getRemoveWarnin
           {...register(`${path}.deductions.idecoMonthly`, optionalNumberRules({ min: 0 }))}
         />
         <NumberInput
-          label="生命保険料(年額・任意)"
+          label="生命保険料(未対応)"
+          hint="現在は控除計算に反映されず、入力すると計算を停止します"
           suffix="円"
           {...register(`${path}.deductions.lifeInsurancePremiumAnnual`, optionalNumberRules({ min: 0 }))}
         />

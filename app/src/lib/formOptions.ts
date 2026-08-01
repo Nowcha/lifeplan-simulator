@@ -13,12 +13,12 @@ export const INDEXATION_HELP =
 
 export const EMPLOYMENT_TYPE_OPTIONS = [
   { value: 'salaried', label: '給与所得者' },
-  { value: 'self-employed', label: '自営業' },
+  { value: 'self-employed', label: '自営業(未対応)' },
   { value: 'none', label: 'なし' }
 ] as const
 
 export const EMPLOYMENT_TYPE_HELP =
-  '社会保険・税金の計算方法が変わる。給与所得者=厚生年金・健康保険(協会けんぽ/組合健保)に加入し給与所得控除を適用。自営業=国民年金・国民健康保険相当で計算(本ツールでは給与所得として簡易計算)。なし=収入なしとして扱う。'
+  '給与所得者は厚生年金・健康保険と給与所得控除を計算する。自営業は所得区分・国民健康保険・国民年金のモデルが未実装のため、現在は計算できません。なしは収入なしとして扱う。'
 
 export const HEALTH_INSURANCE_OPTIONS = [
   { value: 'kyokai-kenpo', label: '協会けんぽ' },
@@ -56,7 +56,7 @@ export const DRAWDOWN_STRATEGY_OPTIONS = [
 ] as const
 
 export const DRAWDOWN_STRATEGY_HELP =
-  '資産の取り崩し方。定額取り崩し=毎年同じ金額を取り崩す(残高が尽きると枯渇しやすい)。定率取り崩し=残高に対して毎年同じ割合(%)を取り崩す(残高が減れば取り崩し額も減り、資産は尽きにくいが取り崩し額が変動する)。'
+  '定額・定率は将来の取り崩し開始条件に使う予定の設定で、現在の計算では使用しません。現状は生活防衛資金を下回った不足額を、指定した優先順で取り崩します。'
 
 export const EVENT_TYPE_OPTIONS = [
   { value: 'childbirth', label: '出産' },

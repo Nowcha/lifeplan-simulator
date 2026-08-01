@@ -189,6 +189,26 @@ function collectChildrenForEducation(household: Household, events: LifeEvent[]):
   return Array.from(childrenById.values());
 }
 
+function assertSupportedProfile(household: Household): void {
+  for (const person of household.persons) {
+    if (person.employment.type === "self-employed") {
+      throw new Error(
+        `Self-employed profiles are not supported: ${person.id}（自営業の所得・国民健康保険・国民年金は未実装です）`
+      );
+    }
+    if ((person.retirementLumpSum ?? 0) > 0) {
+      throw new Error(
+        `Retirement lump sum is not supported: ${person.id}（退職金と退職所得課税は未実装です）`
+      );
+    }
+    if ((person.deductions.lifeInsurancePremiumAnnual ?? 0) > 0) {
+      throw new Error(
+        `Life insurance premium deduction is not supported: ${person.id}（生命保険料控除は未実装です）`
+      );
+    }
+  }
+}
+
 /**
  * Step 6: base expenses (rent items stop at any HousingPurchaseEvent that
  * names them in terminatesExpenseLabels) + recurring/one-time event
@@ -381,6 +401,7 @@ export function runDeterministic(
   rules: RuleSet,
   options?: PipelineOptions
 ): SimulationResult {
+  assertSupportedProfile(household);
   const firstYearSameIncome = options?.firstYearResidentTaxAssumesSameIncome ?? true;
   const rates = indexationFactors(assumptions, options?.stochasticPaths);
   const { startYear, endAge } = assumptions.simulation;
