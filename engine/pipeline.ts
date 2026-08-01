@@ -161,23 +161,32 @@ function indexationFactors(
  */
 function collectChildrenForEducation(household: Household, events: LifeEvent[]): ChildEducationInput[] {
   const educationEvents = events.filter((e): e is EducationPlan => e.type === "education");
+  const childrenById = new Map<string, ChildEducationInput>();
 
-  const fromHousehold: ChildEducationInput[] = household.children.map((child) => ({
-    childId: child.id,
-    birthYearMonth: child.birthYearMonth,
-    plan: educationEvents.find((e) => e.id === child.educationPlanRef),
-    annualIncome: child.annualIncome
-  }));
+  for (const child of household.children) {
+    childrenById.set(child.id, {
+      childId: child.id,
+      birthYearMonth: child.birthYearMonth,
+      plan: educationEvents.find((e) => e.id === child.educationPlanRef),
+      annualIncome: child.annualIncome
+    });
+  }
 
-  const fromEvents: ChildEducationInput[] = events
-    .filter((e): e is ChildbirthEvent => e.type === "childbirth")
-    .map((e) => ({
-      childId: e.childId,
-      birthYearMonth: e.expectedYearMonth,
-      plan: educationEvents.find((p) => p.childId === e.childId)
-    }));
+  for (const event of events.filter((e): e is ChildbirthEvent => e.type === "childbirth")) {
+    // The editor can link a childbirth event to a planned child that already
+    // exists in household.children. Keep the richer household record in that
+    // case and only synthesize a child for event-only profiles. Without this
+    // identity merge, benefits, education expenses and dependent deductions
+    // are all counted twice for the same childId.
+    if (childrenById.has(event.childId)) continue;
+    childrenById.set(event.childId, {
+      childId: event.childId,
+      birthYearMonth: event.expectedYearMonth,
+      plan: educationEvents.find((plan) => plan.childId === event.childId)
+    });
+  }
 
-  return [...fromHousehold, ...fromEvents];
+  return Array.from(childrenById.values());
 }
 
 /**
