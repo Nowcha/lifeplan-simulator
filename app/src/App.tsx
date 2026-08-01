@@ -10,6 +10,7 @@ import { TornadoChart } from './components/charts/TornadoChart'
 import { DataTable } from './components/DataTable'
 import { ProfileEditor } from './components/profile/ProfileEditor'
 import { ScenarioCompareView } from './components/scenarios/ScenarioCompareView'
+import { MaterialIcon } from './components/form/MaterialIcon'
 
 // 資産クラスの感度分析行は assumptions.assetClasses[].id(ユーザー命名、通常は日本語)を
 // そのままラベルとして使う。「基準金利」だけはエンジン側の固定ID(BASE_RATE_FACTOR_ID)
@@ -174,7 +175,7 @@ function Toast({ message, onDismiss }: { message: string; onDismiss: () => void 
           aria-label="通知を閉じる"
           className="-my-1 shrink-0 px-1 text-page/70 hover:text-page"
         >
-          ×
+          <MaterialIcon name="close" />
         </button>
       </div>
     </div>

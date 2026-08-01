@@ -4,6 +4,7 @@ import { deleteScenario, type Scenario } from '../../lib/scenarioStorage'
 import { CATEGORICAL_PALETTE, MAX_COMPARE_SCENARIOS } from '../../lib/categoricalPalette'
 import { formatManYen, formatPercent } from '../../lib/format'
 import { CompareChart, type CompareSeries } from '../charts/CompareChart'
+import { MaterialIcon } from '../form/MaterialIcon'
 
 interface ScenarioCompareViewProps {
   scenarios: Scenario[]
@@ -98,8 +99,9 @@ export function ScenarioCompareView({ scenarios, onScenariosChanged }: ScenarioC
                 <button
                   type="button"
                   onClick={() => handleDelete(scenario.id)}
-                  className="-my-2 shrink-0 px-2 py-2 text-xs text-ink-muted hover:text-critical"
+                  className="-my-2 inline-flex shrink-0 items-center gap-1 px-2 py-2 text-xs text-ink-muted hover:text-critical"
                 >
+                  <MaterialIcon name="delete" />
                   削除
                 </button>
               </label>

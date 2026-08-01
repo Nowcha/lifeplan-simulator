@@ -3,6 +3,7 @@ import type { LifeEvent } from '../../../../engine/types/index.js'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { eventPath } from '../../lib/formPath'
 import { AddButton, ItemCard, Section } from '../form/fields'
+import { MaterialIcon } from '../form/MaterialIcon'
 import { EVENT_TYPE_OPTIONS } from '../../lib/formOptions'
 import { describeEventRemoval } from '../../lib/references'
 import { useUndo } from '../../lib/undoContext'
@@ -105,9 +106,10 @@ export function EventsForm({ control, register, setValue }: EventsFormProps) {
             key={opt.value}
             type="button"
             onClick={() => events.append(defaultEventFor(opt.value, `event-${Date.now()}-${events.fields.length}`))}
-            className="rounded-sm border border-dashed border-hairline-strong px-3 py-1.5 text-xs text-ink-secondary hover:border-amber-500 hover:text-amber-700"
+            className="inline-flex items-center gap-1 rounded-sm border border-dashed border-hairline-strong px-3 py-1.5 text-xs text-ink-secondary hover:border-amber-500 hover:text-amber-700"
           >
-            + {opt.label}
+            <MaterialIcon name="add" />
+            {opt.label}
           </button>
         ))}
       </div>

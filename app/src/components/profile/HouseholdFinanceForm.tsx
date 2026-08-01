@@ -3,6 +3,7 @@ import { useFieldArray, useFormContext, type Control, type UseFormRegister, type
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { usePrimitiveArrayField } from '../../lib/usePrimitiveArrayField'
 import { AddButton, HelpBadge, ItemCard, MonthInput, NumberInput, Section, SelectInput, TextInput } from '../form/fields'
+import { MaterialIcon } from '../form/MaterialIcon'
 import { AssetClassPicker } from './pickers'
 import { describeReferences, renameExpenseLabelReferences } from '../../lib/references'
 import { useUndo } from '../../lib/undoContext'
@@ -269,8 +270,9 @@ export function HouseholdFinanceForm({ control, register, setValue }: HouseholdF
                     <button
                       type="button"
                       onClick={() => drawdownOrder.remove(index)}
-                      className="text-xs text-ink-muted hover:text-critical"
+                      className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-critical"
                     >
+                      <MaterialIcon name="delete" />
                       削除
                     </button>
                   </div>

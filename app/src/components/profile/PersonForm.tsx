@@ -1,6 +1,7 @@
 import { useFieldArray, type Control, type UseFormRegister } from 'react-hook-form'
 import type { ProfileFormValues } from '../../lib/profileStorage'
 import { AddButton, ItemCard, MonthInput, NumberInput, SelectInput } from '../form/fields'
+import { MaterialIcon } from '../form/MaterialIcon'
 import { numberRules, optionalNumberRules, yearMonthRules } from '../../lib/validation'
 import {
   EMPLOYMENT_TYPE_HELP,
@@ -100,8 +101,9 @@ export function PersonForm({ index, control, register, onRemove, getRemoveWarnin
               <button
                 type="button"
                 onClick={() => curve.remove(curveIndex)}
-                className="h-fit pb-1.5 text-xs text-ink-muted hover:text-critical"
+                className="inline-flex h-fit items-center gap-1 pb-1.5 text-xs text-ink-muted hover:text-critical"
               >
+                <MaterialIcon name="delete" />
                 削除
               </button>
             </div>
