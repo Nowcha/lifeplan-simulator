@@ -23,6 +23,12 @@
 - ゴールデンテスト(`engine/tax/__tests__/golden.test.ts`)は**一次情報の根拠URLをテストコード内コメントに残す**
 - `npm test` が通らない状態でコミットしない
 
+## 完了条件
+
+- 完了を報告する前に `npm run typecheck` / `npm run lint` / `npm test` をすべて通す
+- Stop フック(`.claude/hooks/verify-on-stop.mjs`)が機械的に強制する。ソースが変更されたときだけ走る
+- フックは完了ゲートであり絶対的な強制ではない(ユーザー中断時は発火せず、タイムアウトはfail-open)。同じ3コマンドを pre-push と CI にも置く
+
 ## rules ファイルの更新規律
 
 - `rules/<year>.json` の数値を追加・変更するときは、一次情報(国税庁・協会けんぽ・厚労省・こども家庭庁・自治体公式)をWebSearch/WebFetchで確認し、各値に `_source` フィールド(URL + 確認日)を付ける
@@ -32,3 +38,4 @@
 
 - Conventional Commits(`feat:` `fix:` `test:` `docs:` `chore:`)
 - 1コミット1関心事。rules値の更新は独立コミットにする
+- `main` で直接作業・pushしない。`feature/xxx` を切って作業する
