@@ -33,8 +33,23 @@ export interface Person {
   retirementLumpSum?: Yen;
   deductions: {
     idecoMonthly?: Yen;
-    lifeInsurancePremiumAnnual?: Yen;
+    lifeInsurance?: LifeInsurancePremiums;
   };
+}
+
+/**
+ * 生命保険料控除の支払保険料(年額)。区分ごとに別枠で控除額を計算するため、
+ * 単一の合計値ではなく区分別に持つ。制度は契約時期で決まるので入力側の情報。
+ */
+export interface LifeInsurancePremiums {
+  /** "new" = 平成24年1月1日以後の契約 / "old" = 平成23年12月31日以前の契約 */
+  regime: "new" | "old";
+  /** 一般生命保険料 */
+  generalAnnual?: Yen;
+  /** 介護医療保険料。新制度で創設された区分で、旧制度には存在しない */
+  careMedicalAnnual?: Yen;
+  /** 個人年金保険料 */
+  annuityAnnual?: Yen;
 }
 
 export interface IncomePoint {

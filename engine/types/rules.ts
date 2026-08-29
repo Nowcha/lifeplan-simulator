@@ -87,6 +87,33 @@ export interface SpecificRelativeSpecialDeductionRules {
   _source?: RuleSource;
 }
 
+/**
+ * 生命保険料控除の帯。支払保険料が `upTo` 以下のとき控除額 = 保険料 × rate + add。
+ * 全額控除の帯は rate=1/add=0、頭打ちの帯は rate=0/add=上限額 で表す。
+ */
+export interface LifeInsuranceBand {
+  /** 支払保険料の上限。null = 上限なし(最終帯) */
+  upTo: Yen | null;
+  rate: Rate;
+  add: Yen;
+}
+
+export interface LifeInsuranceRegimeRules {
+  bands: LifeInsuranceBand[];
+  /** 区分(一般/介護医療/個人年金)ごとの控除上限 */
+  perCategoryMax: Yen;
+}
+
+export interface LifeInsuranceDeductionRules {
+  /** 平成24年1月1日以後の契約 */
+  newContract: LifeInsuranceRegimeRules;
+  /** 平成23年12月31日以前の契約。介護医療の区分は存在しない */
+  oldContract: LifeInsuranceRegimeRules;
+  /** 3区分合計の適用限度額 */
+  totalMax: Yen;
+  _source: RuleSource;
+}
+
 export interface IncomeTaxRules {
   brackets: TaxBracket[];
   /** Salary income computed directly (income after 給与所得控除) */
@@ -97,6 +124,7 @@ export interface IncomeTaxRules {
   spouseSpecialDeduction: SpouseSpecialDeductionRules;
   dependentDeduction: DependentDeductionRules;
   specificRelativeSpecialDeduction: SpecificRelativeSpecialDeductionRules;
+  lifeInsuranceDeduction: LifeInsuranceDeductionRules;
   /** 復興特別所得税 (0.021). From 2027 this bucket represents 復興1.1% + 防衛1% (total unchanged). */
   reconstructionSurtax: Rate;
   _source: RuleSource;
@@ -111,6 +139,7 @@ export interface ResidentTaxRules {
   basicDeduction: { steps: { incomeUpTo: Yen | null; amount: Yen }[] };
   spouseDeduction: SpouseDeductionRules;
   spouseSpecialDeduction: SpouseSpecialDeductionRules;
+  lifeInsuranceDeduction: LifeInsuranceDeductionRules;
   /** 調整控除 (personal-deduction gap credit) */
   adjustmentCredit: {
     basicDeductionGap: Yen;

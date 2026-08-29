@@ -100,12 +100,30 @@ describe("決定論パイプライン (サンプル世帯)", () => {
     expect(() => runDeterministic(unsupported, [], sampleAssumptions, rules)).toThrow(/Retirement lump sum/);
   });
 
-  test("未対応の生命保険料控除を無視して計算しない", () => {
-    const unsupported: Household = structuredClone(sampleHousehold);
-    const firstPerson = unsupported.persons[0];
+  test("生命保険料控除を反映して所得税・住民税が下がる", () => {
+    const withPremiums: Household = structuredClone(sampleHousehold);
+    const firstPerson = withPremiums.persons[0];
     if (!firstPerson) throw new Error("sample person is required");
-    firstPerson.deductions.lifeInsurancePremiumAnnual = 120_000;
+    // 新契約・3区分とも区分上限に達する額 = 所得税12万円・住民税7万円の控除
+    firstPerson.deductions.lifeInsurance = {
+      regime: "new",
+      generalAnnual: 80_000,
+      careMedicalAnnual: 80_000,
+      annuityAnnual: 80_000
+    };
 
-    expect(() => runDeterministic(unsupported, [], sampleAssumptions, rules)).toThrow(/Life insurance premium/);
+    const base = runDeterministic(sampleHousehold, [], sampleAssumptions, rules);
+    const reduced = runDeterministic(withPremiums, [], sampleAssumptions, rules);
+
+    const baseFirst = base.deterministic[0];
+    const reducedFirst = reduced.deterministic[0];
+    if (!baseFirst || !reducedFirst) throw new Error("at least one year is required");
+
+    const baseIncome = baseFirst.income[firstPerson.id];
+    const reducedIncome = reducedFirst.income[firstPerson.id];
+    if (!baseIncome || !reducedIncome) throw new Error("person income row is required");
+
+    expect(reducedIncome.incomeTax).toBeLessThan(baseIncome.incomeTax);
+    expect(reducedIncome.net).toBeGreaterThan(baseIncome.net);
   });
 });

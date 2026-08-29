@@ -4,7 +4,8 @@
  * → progressive brackets → 復興特別所得税 surtax → final 100-yen floor.
  */
 
-import type { IncomeTaxRules, Rate, Yen } from "../types/index.js";
+import type { IncomeTaxRules, LifeInsurancePremiums, Rate, Yen } from "../types/index.js";
+import { lifeInsuranceDeduction } from "./lifeInsurance.js";
 import { applyRate, floorTo, stepAmount } from "./rounding.js";
 import { dependentDeductionTotal,
   specificRelativeSpecialDeductionTotal,
@@ -24,6 +25,8 @@ export interface IncomeTaxInput {
   spouseAge?: number | undefined;
   /** この納税者の扶養に入れる親族(扶養控除) */
   dependents?: readonly DependentInput[];
+  /** 生命保険料控除の支払保険料(区分別) */
+  lifeInsurancePremiums?: LifeInsurancePremiums | undefined;
   rules: IncomeTaxRules;
 }
 
@@ -40,6 +43,7 @@ export interface IncomeTaxResult {
     basic: Yen;
     spouse: Yen;
     dependents: Yen;
+    lifeInsurance: Yen;
     total: Yen;
   };
 }
@@ -60,7 +64,12 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxResult {
   const dependents =
     dependentDeductionTotal(dependentList, rules.dependentDeduction) +
     specificRelativeSpecialDeductionTotal(dependentList, rules.specificRelativeSpecialDeduction);
-  const totalDeductions = socialInsurancePaid + ideco + basic + spouse.amount + dependents;
+  const lifeInsurance = lifeInsuranceDeduction(
+    input.lifeInsurancePremiums,
+    rules.lifeInsuranceDeduction
+  );
+  const totalDeductions =
+    socialInsurancePaid + ideco + basic + spouse.amount + dependents + lifeInsurance;
 
   // 課税所得: floor to 1,000 yen
   const taxableIncome = floorTo(Math.max(0, totalIncome - totalDeductions), 1000);
@@ -88,6 +97,7 @@ export function computeIncomeTax(input: IncomeTaxInput): IncomeTaxResult {
       basic,
       spouse: spouse.amount,
       dependents,
+      lifeInsurance,
       total: totalDeductions
     }
   };
