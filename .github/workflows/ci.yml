@@ -25,7 +25,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 開発機と同じメジャーに揃える。npm 10 と 11 は、ホスト以外のプラットフォーム
+          # 向け optional 依存の transitive を lockfile に記録するかどうかが違い、
+          # ずれていると npm ci だけが「@emnapi/core が lockfile に無い」で落ちる。
+          node-version: 24
           cache: npm
           cache-dependency-path: package-lock.json
       # npm install ではなく npm ci。ロックファイルとpackage.jsonの不整合は
@@ -43,7 +46,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci

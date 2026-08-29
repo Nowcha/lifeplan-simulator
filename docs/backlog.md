@@ -89,7 +89,7 @@ CIはあるが「知らせる」だけで「止める」ことはできない。
 
    **確認済みで効かない対処**: `npm install --package-lock-only`、lockfile 削除後の再生成、`--os=linux --cpu=x64` — いずれも npm 11 では差分ゼロで、lockfile 側では直せない。
 
-   **恒久対処の候補**: `.github/workflows/ci.yml` の `node-version` をローカルと揃える(20 → 24)か、ローカルを Node 20 に固定する。**バージョンを揃えない限り再発する**。
+   **対処済み(2026-08-30)**: `.github/workflows/ci.yml` の `node-version` を 20 → 24 に上げ、開発機(Node 24 / npm 11.6.2)と揃えた。**逆方向でも再発する** — Node 20 の環境で lockfile を再生成すると、今度は npm 11 側が拒否する。lockfile を触る作業は CI と同じメジャーで行うこと。
 
    旧メモ: 削除で直った回は `node_modules` と `package-lock.json` を消してクリーン再インストールした。**Vite開発サーバーが起動しているとネイティブバイナリがロックされて削除に失敗する**ので先に止めること。app に依存を追加したら必ず `npm ci` で確認する(CIは npm ci を使う)
 
