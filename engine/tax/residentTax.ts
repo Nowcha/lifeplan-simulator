@@ -12,7 +12,8 @@
  * earn no 扶養控除 yet still count toward the headcount (design doc §8 4-1).
  */
 
-import type { ResidentTaxRules, Yen } from "../types/index.js";
+import type { LifeInsurancePremiums, ResidentTaxRules, Yen } from "../types/index.js";
+import { lifeInsuranceDeduction } from "./lifeInsurance.js";
 import { applyRate, floorTo, stepAmount } from "./rounding.js";
 import { spouseDeduction, type SpouseDeductionResult } from "./spouse.js";
 import {
@@ -32,6 +33,8 @@ export interface ResidentTaxInput {
   spouseAge?: number | undefined;
   /** この納税者の扶養に入れる親族 */
   dependents?: readonly DependentInput[];
+  /** 生命保険料控除の支払保険料(区分別) */
+  lifeInsurancePremiums?: LifeInsurancePremiums | undefined;
   rules: ResidentTaxRules;
 }
 
@@ -85,6 +88,10 @@ export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
 
   const ideco = input.idecoAnnual ?? 0;
   const basic = stepAmount(rules.basicDeduction.steps, totalIncome);
+  const lifeInsurance = lifeInsuranceDeduction(
+    input.lifeInsurancePremiums,
+    rules.lifeInsuranceDeduction
+  );
   const spouse = spouseDeduction(
     totalIncome,
     input.spouseTotalIncome,
@@ -112,7 +119,11 @@ export function computeResidentTax(input: ResidentTaxInput): ResidentTaxResult {
   }
 
   const taxableIncome = floorTo(
-    Math.max(0, totalIncome - (socialInsurancePaid + ideco + basic + spouse.amount + dependents)),
+    Math.max(
+      0,
+      totalIncome -
+        (socialInsurancePaid + ideco + basic + spouse.amount + dependents + lifeInsurance)
+    ),
     1000
   );
 

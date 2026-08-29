@@ -201,11 +201,6 @@ function assertSupportedProfile(household: Household): void {
         `Retirement lump sum is not supported: ${person.id}（退職金と退職所得課税は未実装です）`
       );
     }
-    if ((person.deductions.lifeInsurancePremiumAnnual ?? 0) > 0) {
-      throw new Error(
-        `Life insurance premium deduction is not supported: ${person.id}（生命保険料控除は未実装です）`
-      );
-    }
   }
 }
 
@@ -584,6 +579,7 @@ export function runDeterministic(
         socialInsurancePaid: g.socialInsurance,
         idecoAnnual,
         spouseAge,
+        lifeInsurancePremiums: person.deductions.lifeInsurance,
         dependents: person.id === dependentClaimantId ? householdDependents : []
       };
       const incomeTax = computeIncomeTax(

@@ -132,6 +132,32 @@
       "elderly": 480000,
       "coResidentElderly": 580000
     },
+    "lifeInsuranceDeduction": {
+      "_source": {
+        "url": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1140.htm",
+        "confirmedOn": "2026-08-30",
+        "note": "国税庁 No.1140。区分ごと上限は新契約4万円・旧契約5万円、一般/介護医療/個人年金の合計で12万円が限度。介護医療の区分は新契約のみ"
+      },
+      "newContract": {
+        "perCategoryMax": 40000,
+        "bands": [
+          { "upTo": 20000, "rate": 1, "add": 0 },
+          { "upTo": 40000, "rate": 0.5, "add": 10000 },
+          { "upTo": 80000, "rate": 0.25, "add": 20000 },
+          { "upTo": null, "rate": 0, "add": 40000 }
+        ]
+      },
+      "oldContract": {
+        "perCategoryMax": 50000,
+        "bands": [
+          { "upTo": 25000, "rate": 1, "add": 0 },
+          { "upTo": 50000, "rate": 0.5, "add": 12500 },
+          { "upTo": 100000, "rate": 0.25, "add": 25000 },
+          { "upTo": null, "rate": 0, "add": 50000 }
+        ]
+      },
+      "totalMax": 120000
+    },
     "reconstructionSurtax": 0.021
   },
   "residentTax": {
@@ -258,6 +284,32 @@
       "specific": 450000,
       "elderly": 380000,
       "coResidentElderly": 450000
+    },
+    "lifeInsuranceDeduction": {
+      "_source": {
+        "url": "https://www.city.nagoya.jp/kurashi/zeikin/1037356/1011880/1011883/1011892.html",
+        "confirmedOn": "2026-08-30",
+        "note": "名古屋市の所得控除一覧で帯表を確認。合計限度7万円は江東区の一覧(https://www.city.koto.lg.jp/060502/kurashi/zekin/kuminze/5105.html)でも一致。新旧混在契約の有利判定は本モデルの対象外"
+      },
+      "newContract": {
+        "perCategoryMax": 28000,
+        "bands": [
+          { "upTo": 12000, "rate": 1, "add": 0 },
+          { "upTo": 32000, "rate": 0.5, "add": 6000 },
+          { "upTo": 56000, "rate": 0.25, "add": 14000 },
+          { "upTo": null, "rate": 0, "add": 28000 }
+        ]
+      },
+      "oldContract": {
+        "perCategoryMax": 35000,
+        "bands": [
+          { "upTo": 15000, "rate": 1, "add": 0 },
+          { "upTo": 40000, "rate": 0.5, "add": 7500 },
+          { "upTo": 70000, "rate": 0.25, "add": 17500 },
+          { "upTo": null, "rate": 0, "add": 35000 }
+        ]
+      },
+      "totalMax": 70000
     },
     "nonTaxable": {
       "_source": {
