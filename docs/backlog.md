@@ -85,11 +85,13 @@ CIはあるが「知らせる」だけで「止める」ことはできない。
 
 1. **@emnapi ドリフトで `npm ci` だけが EUSAGE で落ちる** — 4回発生(直近 2026-08-30、ルートの `package-lock.json` で発生)。`npm install` は通る。
 
-   **原因(2026-08-30 に特定)**: ローカルの npm とCIの npm のメジャーバージョン差。`@rolldown/binding-wasm32-wasi`(Vite が引くプラットフォーム固有の optional 依存)が `@emnapi/core` と `@emnapi/runtime` を要求するが、npm 11 はホスト以外のプラットフォーム向け transitive を lockfile に記録せず、CI の npm 10(Node 20)はそれを必須とみなして落ちる。ローカル Node 24 / npm 11.6.2 に対しCIは `node-version: 20`。
+   **原因(2026-08-30 に特定)**: lockfile を生成する OS の差。`@rolldown/binding-wasm32-wasi`(Vitest 経由で入る Vite の optional 依存)が `@emnapi/core` と `@emnapi/runtime` を要求するが、Windows で `npm install` するとこの wasm バイナリがインストール候補外と判定され、transitive が lockfile に書かれない。Linux の `npm ci` は候補とみなすため「lockfile に無い」で落ちる。
 
-   **確認済みで効かない対処**: `npm install --package-lock-only`、lockfile 削除後の再生成、`--os=linux --cpu=x64` — いずれも npm 11 では差分ゼロで、lockfile 側では直せない。
+   **npm のメジャー差ではない**: 当初そう見立てて CI を Node 20 → 24 に上げたが、CI が npm 11 になっても同じエラーだった。この見立ては誤り。
 
-   **対処済み(2026-08-30)**: `.github/workflows/ci.yml` の `node-version` を 20 → 24 に上げ、開発機(Node 24 / npm 11.6.2)と揃えた。**逆方向でも再発する** — Node 20 の環境で lockfile を再生成すると、今度は npm 11 側が拒否する。lockfile を触る作業は CI と同じメジャーで行うこと。
+   **効かない対処(確認済み)**: `npm install --package-lock-only`、lockfile 削除後の再生成、`--os=linux --cpu=x64` — Windows ではいずれも差分ゼロ。
+
+   **対処済み(2026-08-30)**: 欠けていた 2 エントリを `package-lock.json` に直接追加した(`dev`/`optional` フラグと integrity は既存の `@emnapi/wasi-threads` に合わせた)。**Windows で `npm install` を実行すると再び刈り取られる可能性がある**ため、依存を更新したら `npm ci` が Linux で通るかを PR で確認すること。恒久対処は lockfile を Linux で生成すること。
 
    旧メモ: 削除で直った回は `node_modules` と `package-lock.json` を消してクリーン再インストールした。**Vite開発サーバーが起動しているとネイティブバイナリがロックされて削除に失敗する**ので先に止めること。app に依存を追加したら必ず `npm ci` で確認する(CIは npm ci を使う)
 
