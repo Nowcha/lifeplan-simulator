@@ -9,7 +9,9 @@ import {
   HEALTH_INSURANCE_HELP,
   HEALTH_INSURANCE_OPTIONS,
   INDEXATION_HELP,
-  INDEXATION_OPTIONS
+  INDEXATION_OPTIONS,
+  LIFE_INSURANCE_REGIME_HELP,
+  LIFE_INSURANCE_REGIME_OPTIONS
 } from '../../lib/formOptions'
 
 interface PersonFormProps {
@@ -64,11 +66,36 @@ export function PersonForm({ index, control, register, onRemove, getRemoveWarnin
           suffix="円"
           {...register(`${path}.deductions.idecoMonthly`, optionalNumberRules({ min: 0 }))}
         />
+        <SelectInput
+          label="生命保険の制度"
+          help={LIFE_INSURANCE_REGIME_HELP}
+          options={[...LIFE_INSURANCE_REGIME_OPTIONS]}
+          {...register(`${path}.deductions.lifeInsurance.regime`)}
+        />
         <NumberInput
-          label="生命保険料(未対応)"
-          hint="現在は控除計算に反映されず、入力すると計算を停止します"
+          label="一般生命保険料(年額)"
           suffix="円"
-          {...register(`${path}.deductions.lifeInsurancePremiumAnnual`, optionalNumberRules({ min: 0 }))}
+          {...register(
+            `${path}.deductions.lifeInsurance.generalAnnual`,
+            optionalNumberRules({ min: 0 })
+          )}
+        />
+        <NumberInput
+          label="介護医療保険料(年額)"
+          hint="新制度のみ。旧制度を選ぶと計算を停止します"
+          suffix="円"
+          {...register(
+            `${path}.deductions.lifeInsurance.careMedicalAnnual`,
+            optionalNumberRules({ min: 0 })
+          )}
+        />
+        <NumberInput
+          label="個人年金保険料(年額)"
+          suffix="円"
+          {...register(
+            `${path}.deductions.lifeInsurance.annuityAnnual`,
+            optionalNumberRules({ min: 0 })
+          )}
         />
       </div>
 

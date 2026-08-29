@@ -11,6 +11,14 @@ export const INDEXATION_OPTIONS = [
 export const INDEXATION_HELP =
   '金額が毎年どう変わるかの指定。固定(据え置き)=ずっと同じ金額。インフレ連動=前提条件のインフレ率で毎年増減。賃金上昇連動=前提条件の賃金上昇率で毎年増減。'
 
+export const LIFE_INSURANCE_REGIME_OPTIONS = [
+  { value: 'new', label: '新制度(平成24年1月1日以後の契約)' },
+  { value: 'old', label: '旧制度(平成23年12月31日以前の契約)' }
+] as const
+
+export const LIFE_INSURANCE_REGIME_HELP =
+  '控除額の計算式と上限が制度で異なる。区分ごとに計算して合算し、所得税は合計12万円、住民税は合計7万円が限度。介護医療保険料は新制度で創設された区分のため、旧制度では指定できません。新旧の契約が混在する世帯は、有利な方の制度を選んでください(混在時の有利判定は未対応)。'
+
 export const EMPLOYMENT_TYPE_OPTIONS = [
   { value: 'salaried', label: '給与所得者' },
   { value: 'self-employed', label: '自営業(未対応)' },
