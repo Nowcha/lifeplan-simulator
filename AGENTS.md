@@ -1,3 +1,4 @@
+<!-- GENERATED from CLAUDE.md - do not edit directly. source-sha256: 8e99e57b4b66c3f8aacd94ee72353776c0a40452e103643463be2595307e6cd1 -->
 # lifeplan-sim
 
 高精度ライフプランシミュレーター。設計書は `docs/lifeplan-schema-design.md`(以下「設計書」)。
