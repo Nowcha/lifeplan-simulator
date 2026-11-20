@@ -3,7 +3,7 @@
  * §8 手順7): 元利均等/元金均等, 変動/固定/当初固定, 5年ルール, 125%ルール,
  * 未払利息, 繰上返済.
  *
- * Rounding (per CLAUDE.md "ローン償還は月次円未満切捨て"): monthly interest
+ * Rounding (per AGENTS.md "ローン償還は月次円未満切捨て"): monthly interest
  * is floored to the yen. Payment amounts computed by the annuity formula are
  * rounded UP (Math.ceil) so a loan is guaranteed to fully amortize within
  * its term — flooring would leave a residual balance that never reaches
